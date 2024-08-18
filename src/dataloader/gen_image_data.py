@@ -3,7 +3,7 @@ import random
 
 import cv2
 
-def create_dataset(video_folder, output_folder, num_frames=50):
+def generate_image_data_from_video(video_folder, output_folder, num_frames=50):
     # Get a list of all video files in the folder
     video_files = [f for f in os.listdir(video_folder) if f.endswith('.mp4')]
 
