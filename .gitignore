@@ -50,8 +50,7 @@
 *.pyc
 *.xls
 *.xlsx
-
-*/**[^.]*
+data/*
 
 # Flask stuff:
 instance/
