@@ -1,39 +1,35 @@
-import sys
-
-import numpy as np
+import argparse
 
 from dataloader.dataset import create_dataset
+from evaluate import evaluate_model
 from models.liveness import LivenessModel
 from models.adversarial_attack import AdversarialModel
-from evaluate import evaluate_model
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
 
-def main(data_path = '../data/frames'):
-    # Load data
-    train_dataset, test_dataset = create_dataset(data_path)
-
+def main(data_path, model_path):
     # Train liveness detection model
-    liveness_model = LivenessModel()
-    liveness_model.train(train_dataset, test_dataset, epochs=1)
-
-    # # Evaluate model
-    y_test, y_pred = [], []
-    for X_test, y in test_dataset:
-        pred = np.array(liveness_model(X_test))
-        pred = (pred > 0.5).astype(int)
-        y_test.append(y.numpy())
-        y_pred.append(pred)
+    liveness_model = LivenessModel(model_path)
     
-    y_test = np.concatenate(y_test)
-    y_pred = np.concatenate(y_pred)
+    # Load data
+    train_dataset, val_dataset, test_dataset = create_dataset(
+        data_path, 
+        image_size=(liveness_model.img_size, liveness_model.img_size)
+    )
 
-    accuracy, precision, recall, f1 = evaluate_model(y_test, y_pred)
+    liveness_model.train(train_dataset, val_dataset, epochs=10)
+
+    # Evaluate model
+    accuracy, precision, recall, f1 = evaluate_model(
+        liveness_model, test_dataset
+    )
+
     print(
-        f'Accuracy: {accuracy},'
-        f'Precision: {precision},'
-        f'Recall: {recall},'
-        f'F1-Score: {f1}'
+        "Evaluation Metrics in the test dataset:\n"
+        f"Accuracy: {round(accuracy * 100, 2)}%\n"
+        f"Precision: {round(precision * 100, 2)}%\n"
+        f"Recall: {round(recall * 100, 2)}%\n"
+        f"F1-Score: {round(f1 * 100, 2)}%\n"
     )
 
     # # Test adversarial attacks
@@ -47,10 +43,21 @@ def main(data_path = '../data/frames'):
     # identify_vulnerabilities()
     # mitigate_vulnerabilities()
 
-if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        print("Usage: python train.py <data_path>")
-        sys.exit(1)
-    
-    data_path = sys.argv[1]
-    main(data_path)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Train and evaluate the liveness detection model."
+    )
+    parser.add_argument(
+        "--data_path", 
+        default="../data/frames", 
+        help="Path to the data directory"
+    )
+    parser.add_argument(
+        "--model_path",
+        default=None,
+        help="Path to the model directory to continue training",
+    )
+    args = parser.parse_args()
+
+    main(args.data_path, args.model_path)
