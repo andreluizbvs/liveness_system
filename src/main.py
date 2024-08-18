@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 
 from dataloader.dataloader import create_dataset
 from models.liveness import LivenessModel

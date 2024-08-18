@@ -20,8 +20,6 @@
 *.json
 *.xml
 *.yaml
-*.yml
-*.txt
 *.log
 *.png
 *.jpg
