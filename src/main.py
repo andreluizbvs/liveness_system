@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from dataloader.dataloader import create_dataset
 from models.liveness import LivenessModel
@@ -6,23 +7,6 @@ from models.adversarial_attack import AdversarialModel
 from evaluate import evaluate_model
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
-def split_features_labels(dataset):
-    def _split_features_labels(image, label):
-        return image, label
-    return dataset.map(_split_features_labels)
-
-def dataset_to_numpy(dataset):
-    images = []
-    labels = []
-    for image, label in dataset.as_numpy_iterator():
-        images.append(image)
-        labels.append(label)
-        
-    # Ensure all images have the same shape
-    images = np.array([np.array(img) for img in images])
-    labels = np.array(labels)
-    
-    return images, labels
 
 def main():
     # Load data
@@ -30,13 +14,19 @@ def main():
 
     # Train liveness detection model
     liveness_model = LivenessModel()
-    liveness_model.train(train_dataset, test_dataset)
-
-    test_dataset = split_features_labels(test_dataset)
-    X_test, y_test = dataset_to_numpy(test_dataset)
+    liveness_model.train(train_dataset, test_dataset, epochs=1)
 
     # # Evaluate model
-    y_pred = liveness_model(X_test)
+    y_test, y_pred = [], []
+    for X_test, y in test_dataset:
+        pred = np.array(liveness_model(X_test))
+        pred = (pred > 0.5).astype(int)
+        y_test.append(y.numpy())
+        y_pred.append(pred)
+    
+    y_test = np.concatenate(y_test)
+    y_pred = np.concatenate(y_pred)
+
     accuracy, precision, recall, f1 = evaluate_model(y_test, y_pred)
     print(
         f'Accuracy: {accuracy},'

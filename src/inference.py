@@ -8,9 +8,9 @@ def main(img_path, model_path):
     prediction = liveness_model.predict(preprocessed_image)
     
     if prediction > 0.5:
-        print("Live")
+        print("Live/Real")
     else:
-        print("Spoof")
+        print("Spoof/Attack")
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
