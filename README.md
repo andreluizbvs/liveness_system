@@ -1,6 +1,3 @@
-# liveness_system
-Prototype of a liveness detection system to identify spoofs in videos from camera selfies
-
 # Liveness Detection System
 
 Prototype of a liveness detection system to identify spoofs in videos from camera selfies. The project includes training, evaluation, inference and adversarial attack testing of the liveness detection model.
@@ -9,9 +6,7 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+- [License](./LICENSE)
 
 ## Installation
 
@@ -58,5 +53,3 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     ```
 
 3. The script will output the accuracy, precision, recall, and F1-score of the model.
-
-## Project Structure
