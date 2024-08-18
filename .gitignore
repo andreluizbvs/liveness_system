@@ -1,65 +1,57 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
+# Machine Learning and Computer Vision stuff
+*.model
+*.weights
+*.h5
+*.keras
+*.pth
+*.ckpt
+*.pb
+*.tflite
+*.onnx
+*.caffemodel
+*.prototxt
+*.pkl
+*.joblib
+*.npy
+*.npz
+*.hdf5
+*.csv
+*.tsv
+*.json
+*.xml
+*.yaml
+*.yml
+*.txt
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+*.tif
+*.tiff
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.zip
+*.tar
+*.gz
+*.bz2
+*.rar
+*.7z
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.pyc
+*.xls
+*.xlsx
 
 # Flask stuff:
 instance/
