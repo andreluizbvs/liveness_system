@@ -2,6 +2,7 @@ import random
 
 import cv2
 import numpy as np
+import torch
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image_dataset_from_directory
 from tensorflow.keras.layers import (
@@ -11,9 +12,15 @@ from tensorflow.keras.layers import (
     RandomTranslation,
     RandomCrop,
 )
+from PIL import Image
+from insightface.app import FaceAnalysis
+
+app = FaceAnalysis()
+app.prepare(ctx_id=0, det_size=(640, 640))
+
 
 seed_value = 42
-
+dummy_image = tf.zeros([1, 224, 224, 3], dtype=tf.float32)
 
 def moire_pattern(image):
     # Convert the image to grayscale
@@ -71,8 +78,29 @@ def apply_custom_augmentation(image):
     augmentation = random.choice(augmentations)
     return augmentation(image)
 
+def extract_face(image):
+    try:
+        image = image.numpy()
+        image = image.astype(np.uint8)
+        image = image[0]
+        
+        faces = app.get(image)
+        if len(faces) > 0 and faces[0].det_score > 0.5:
+            bbox = faces[0].bbox.astype(int)
+            x1, y1, x2, y2 = bbox
+            face = image[int(y1):int(y2), int(x1):int(x2)]
+            face = np.array(Image.fromarray(face, mode="RGB").resize((224, 224)))
+            return tf.expand_dims(tf.convert_to_tensor(face, dtype=tf.float32), 0)
+        
+        # print("No face detected.")
+        return dummy_image
+    except Exception as e:
+        print(f"Error in extract_face: {e}")
+        return dummy_image
 
-def create_dataset(data_dir, image_size, batch_size=32, test_size=0.3):
+def create_dataset(
+    data_dir, image_size, batch_size=1, test_size=0.3, combine_frame_and_face=False
+):
     # Load the dataset from the directory
     train_dataset = image_dataset_from_directory(
         data_dir,
@@ -108,7 +136,7 @@ def create_dataset(data_dir, image_size, batch_size=32, test_size=0.3):
     print("Class names and their corresponding indices:", class_names)
 
     # Split test_dataset into validation and test datasets
-    val_size = int(len(test_dataset) * (1 / 3))
+    val_size = int(len(test_dataset) * (1.0 / 3.0))
     test_size = len(test_dataset) - val_size
 
     val_dataset = test_dataset.take(val_size)
@@ -118,6 +146,30 @@ def create_dataset(data_dir, image_size, batch_size=32, test_size=0.3):
     train_dataset = train_dataset.map(
         lambda x, y: (data_augmentation(x, training=True), y)
     )
+
+    def filter_none(entry, label):
+        if len(entry) != 2:
+            return True
+        image, face = entry
+        return tf.reduce_all(tf.not_equal(face, dummy_image))
+
+    if combine_frame_and_face:
+        # Extract faces and create dual input pipeline
+        def preprocess(image, label):
+            face = tf.py_function(extract_face, [image], tf.float32)
+            face = tf.ensure_shape(face, [1, image_size[0], image_size[1], 3])
+            return (image, face), label
+    else:
+        def preprocess(image, label):
+            return image, label
+
+    train_dataset = train_dataset.map(preprocess).filter(filter_none)
+    val_dataset = val_dataset.map(preprocess).filter(filter_none)
+    test_dataset = test_dataset.map(preprocess).filter(filter_none)
+
+    print("Training dataset size:", len(list(train_dataset)))
+    print("Validation dataset size:", len(list(val_dataset)))
+    print("Testing dataset size:", len(list(test_dataset)))
 
     # Prefetch the datasets for performance optimization
     train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)

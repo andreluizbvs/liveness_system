@@ -1,7 +1,9 @@
 import os
 import random
+from tqdm import tqdm
 
 import cv2
+from deepface import DeepFace
 
 def generate_image_data_from_video(video_folder, output_folder, num_frames=50):
     # Get a list of all video files in the folder
@@ -38,9 +40,46 @@ def generate_image_data_from_video(video_folder, output_folder, num_frames=50):
         # Release the video file
         video.release()
 
-# Example usage
 # video_folder = '../../data/archive/real/no_medical_mask/'
 # output_folder = '../../data/frames/real/'
-video_folder = '../../data/archive/silicone/no_medical_mask/'
-output_folder = '../../data/frames/silicone/'
-create_dataset(video_folder, output_folder)
+# video_folder = '../../data/archive/silicone/no_medical_mask/'
+# output_folder = '../../data/frames/silicone/'
+# generate_image_data_from_video(video_folder, output_folder)
+
+def get_most_confident_face(detections):
+    most_confident_face = None
+    max_confidence = 0
+
+    for face in detections:
+        confidence = face['confidence']
+
+        if confidence > max_confidence:
+            most_confident_face = face
+            max_confidence = confidence
+
+    return most_confident_face if max_confidence > 0.5 else None
+
+def generate_face_data_from_images(image_folder, output_folder):
+    # Walk through the image folder
+    for root, _, files in os.walk(image_folder):
+        for file in tqdm(files):
+            if file.endswith('.jpg') or file.endswith('.png'):
+                image_path = os.path.join(root, file)
+
+                # Detect faces using DeepFace's YOLOv8
+                detections = DeepFace.extract_faces(image_path, detector_backend='yolov8', enforce_detection=False)
+
+                face = get_most_confident_face(detections)
+
+                # Save the detected faces
+                if face is not None:
+                    relative_path = os.path.relpath(root, image_folder)
+                    face_output_folder = os.path.join(output_folder, relative_path)
+                    os.makedirs(face_output_folder, exist_ok=True)
+                    face_path = os.path.join(face_output_folder, f'{os.path.splitext(file)[0]}_face.jpg')
+                    cv2.imwrite(face_path, (face['face'] * 255).astype(int))
+
+
+image_folder = '../../data/frames'
+output_folder = '../../data/silicone_faces'
+generate_face_data_from_images(image_folder, output_folder)
