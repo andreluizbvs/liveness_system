@@ -109,11 +109,6 @@ class LivenessModel:
         return model
 
     def train(self, train_dataset, val_dataset, epochs=10, batch_size=32):
-        if not isinstance(train_dataset.element_spec, tuple) or len(train_dataset.element_spec) != 2:
-            train_dataset = train_dataset.batch(batch_size)
-        if not isinstance(val_dataset.element_spec, tuple) or len(val_dataset.element_spec) != 2:
-            val_dataset = val_dataset.batch(batch_size)
-        
         checkpoint = ModelCheckpoint(
             self.best_weights_path,
             monitor="val_accuracy",
