@@ -1,7 +1,7 @@
 import argparse
-import os
 
 import cv2
+import numpy as np
 import onnxruntime as ort
 
 from models.liveness import LivenessModel as SiliconMaskModel
@@ -11,7 +11,7 @@ SPOOF_TH = 0.5
 
 
 def get_scalar(nested_list):
-    while isinstance(nested_list, list):
+    while isinstance(nested_list, (list, np.ndarray)) and len(nested_list) > 0:
         nested_list = nested_list[0]
     return nested_list
 
