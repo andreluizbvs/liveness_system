@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from dataset import seed_value
+SEED_VALUE = 42
 
 def get_ratio_bbox_and_image(full_img_path, bound_box_path):
     img = cv2.imread(full_img_path)
@@ -62,121 +62,120 @@ def read_crop_img_with_bbox(full_img_path, bound_box_path):
     return x1, y1, w1, h1, img, real_w, real_h
 
 
-# Live Storage
-original_cropped_storage = []
-padding_cropped_storage = []
-img_names = []
-original_cropped_labels = []
-padding_cropped_labels = []
+def get_data():
+    # Live Storage
+    padding_cropped_storage = []
+    img_names = []
+    padding_cropped_labels = []
 
-count_live = 0
-count_spoof = 0
-dim = (32, 32)
-count_limit_live = 5000
-count_limit_spoof = 5000
+    count_live = 0
+    count_spoof = 0
+    dim = (32, 32)
+    count_limit_live = 5000
+    count_limit_spoof = 5000
 
-rootdir_train = "../../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
-for file in os.listdir(rootdir_train):
-    # file is 1, 1000, ..... 10029,...... => Name of folder
-    d = os.path.join(rootdir_train, file)
-    if os.path.isdir(d):
-        for e in os.listdir(d):
-            # e is "live" of "spoof"
-            imgs_path = d + "/" + e + "/"
-            for img_path in os.listdir(imgs_path):
-                if img_path.endswith(".jpg"):
-                    full_img_path = imgs_path + img_path
-                    bound_box_path = full_img_path[0:-4] + "_BB.txt"
-                    x1, y1, w1, h1, img, real_w, real_h = (
-                        read_crop_img_with_bbox(full_img_path, bound_box_path)
-                    )
-                    ratio_bbox_and_image = get_ratio_bbox_and_image(
-                        full_img_path, bound_box_path
-                    )
-                    x1_padding, y1_padding, w1_padding, h1_padding = (
-                        get_padding_bbox_indices(
-                            x1, y1, w1, h1, real_w, real_h, ratio_bbox_and_image
+    rootdir_train = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
+    for file in os.listdir(rootdir_train):
+        # file is 1, 1000, ..... 10029,...... => Name of folder
+        d = os.path.join(rootdir_train, file)
+        if os.path.isdir(d):
+            for e in os.listdir(d):
+                # e is "live" of "spoof"
+                imgs_path = d + "/" + e + "/"
+                for img_path in os.listdir(imgs_path):
+                    if img_path.endswith(".jpg"):
+                        full_img_path = imgs_path + img_path
+                        bound_box_path = full_img_path[0:-4] + "_BB.txt"
+                        x1, y1, w1, h1, img, real_w, real_h = (
+                            read_crop_img_with_bbox(full_img_path, bound_box_path)
                         )
-                    )
-                    padding_img = img[
-                        y1_padding : y1 + h1_padding,
-                        x1_padding : x1 + w1_padding,
-                    ]
-                    try:
-                        if (e == "live" and count_live >= count_limit_live) or (
-                            e == "spoof" and count_spoof >= count_limit_spoof
-                        ):
+                        ratio_bbox_and_image = get_ratio_bbox_and_image(
+                            full_img_path, bound_box_path
+                        )
+                        x1_padding, y1_padding, w1_padding, h1_padding = (
+                            get_padding_bbox_indices(
+                                x1, y1, w1, h1, real_w, real_h, ratio_bbox_and_image
+                            )
+                        )
+                        padding_img = img[
+                            y1_padding : y1 + h1_padding,
+                            x1_padding : x1 + w1_padding,
+                        ]
+                        try:
+                            if (e == "live" and count_live >= count_limit_live) or (
+                                e == "spoof" and count_spoof >= count_limit_spoof
+                            ):
+                                continue
+                            resized_padding_img = cv2.resize(
+                                padding_img, dim, interpolation=cv2.INTER_AREA
+                            )
+                            padding_cropped_storage.append(resized_padding_img)
+                            if e == "live":
+                                count_live = count_live + 1
+                                padding_cropped_labels.append(1)
+                            elif e == "spoof":
+                                count_spoof = count_spoof + 1
+                                padding_cropped_labels.append(0)
+                        except Exception as e:
                             continue
-                        resized_padding_img = cv2.resize(
-                            padding_img, dim, interpolation=cv2.INTER_AREA
-                        )
-                        padding_cropped_storage.append(resized_padding_img)
-                        if e == "live":
-                            count_live = count_live + 1
-                            padding_cropped_labels.append(1)
-                        elif e == "spoof":
-                            count_spoof = count_spoof + 1
-                            padding_cropped_labels.append(0)
-                    except Exception as e:
-                        continue
 
-                    img_names.append(img_path)
+                        img_names.append(img_path)
 
-                    if (count_live == count_limit_live and e == "live") or (
-                        count_spoof == count_limit_spoof and e == "spoof"
-                    ):
-                        break
-            if (
-                count_live >= count_limit_live
-                and count_spoof >= count_limit_spoof
-            ):
-                break
-    if count_live >= count_limit_live and count_spoof >= count_limit_spoof:
-        print("DONE Extracting ")
-        break
+                        if (count_live == count_limit_live and e == "live") or (
+                            count_spoof == count_limit_spoof and e == "spoof"
+                        ):
+                            break
+                if (
+                    count_live >= count_limit_live
+                    and count_spoof >= count_limit_spoof
+                ):
+                    break
+        if count_live >= count_limit_live and count_spoof >= count_limit_spoof:
+            print("DONE Extracting ")
+            break
 
-# Save the numpy to NUMPYZ
-X = np.asarray(padding_cropped_storage)
-y = np.asarray(padding_cropped_labels)
-np.savez("anti_spoofing_data.npz", X, y)
-print("Data saved in npz file.")
+    # Save the numpy to NUMPYZ
+    X = np.asarray(padding_cropped_storage)
+    y = np.asarray(padding_cropped_labels)
+    np.savez("anti_spoofing_data.npz", X, y)
+    print("Data saved in npz file.")
 
-anti_spoofing_data = np.load("anti_spoofing_data.npz")
-X, y = anti_spoofing_data["arr_0"], anti_spoofing_data["arr_1"]
-temp = set(y)
-check_live_label = 0
-check_spoof_label = 0
-for i in y:
-    if i == 1:
-        check_live_label += 1
-    elif i == 0:
-        check_spoof_label += 1
-print(
-    f"There are 2 classes. Number of lives is {check_live_label} "
-    f"and number of spoofs is {check_spoof_label}"
-)
+    anti_spoofing_data = np.load("anti_spoofing_data.npz")
+    X, y = anti_spoofing_data["arr_0"], anti_spoofing_data["arr_1"]
+    check_live_label = 0
+    check_spoof_label = 0
+    for i in y:
+        if i == 1:
+            check_live_label += 1
+        elif i == 0:
+            check_spoof_label += 1
+    print(
+        f"There are 2 classes. Number of lives is {check_live_label} "
+        f"and number of spoofs is {check_spoof_label}"
+    )
 
-plt.figure(figsize=(10, 10))
-for i in range(25):
-    plt.subplot(5, 5, i + 1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.grid(False)
-    plt.imshow(X[i][:, :, ::-1])
-plt.show()
+    # plt.figure(figsize=(10, 10))
+    # for i in range(25):
+    #     plt.subplot(5, 5, i + 1)
+    #     plt.xticks([])
+    #     plt.yticks([])
+    #     plt.grid(False)
+    #     plt.imshow(X[i][:, :, ::-1])
+    # plt.show()
 
+    print(X.shape)
+    print(y.shape)
+    X_train, X_valid, y_train, y_valid = train_test_split(
+        X, y, test_size=0.3, random_state=SEED_VALUE
+    )
+    X_valid, X_test, y_valid, y_test = train_test_split(
+        X_valid, y_valid, test_size=0.5, random_state=SEED_VALUE
+    )
+    print(f"Training dataset size of X_train: {len(X_train)}")
+    print(f"Testing dataset size of X_test: {len(X_test)}")
+    print(f"Validation dataset size of X_valid: {len(X_valid)}")
+    print(f"Testing dataset size of y_train: {len(y_train)}")
+    print(f"Testing dataset size of y_test: {len(y_test)}")
+    print(f"Testing dataset size of y_valid: {len(y_valid)}")
 
-print(X.shape)
-print(y.shape)
-X_train, X_valid, y_train, y_valid = train_test_split(
-    X, y, test_size=0.3, random_state=seed_value
-)
-X_valid, X_test, y_valid, y_test = train_test_split(
-    X_valid, y_valid, test_size=0.5, random_state=seed_value
-)
-print(f"Training dataset size of X_train: {len(X_train)}")
-print(f"Testing dataset size of X_test: {len(X_test)}")
-print(f"Validation dataset size of X_valid: {len(X_valid)}")
-print(f"Testing dataset size of y_train: {len(y_train)}")
-print(f"Testing dataset size of y_test: {len(y_test)}")
-print(f"Testing dataset size of y_valid: {len(y_valid)}")
+    return X_train, X_valid, X_test, y_train, y_valid, y_test

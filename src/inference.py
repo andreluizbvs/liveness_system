@@ -3,6 +3,7 @@ import argparse
 import cv2
 import numpy as np
 import onnxruntime as ort
+from deepface import DeepFace
 
 from models.liveness import LivenessModel as SiliconMaskModel
 
@@ -16,6 +17,14 @@ def get_scalar(nested_list):
     return nested_list
 
 
+def best_face(faces):
+    if len(faces) > 0:
+        # Select the most confidently extracted face
+        return max(faces, key=lambda x: x["confidence"])
+    else:
+        return None
+
+
 def process_frame(frame, silicon_mask_model, is_keras):
     preproc_img = SiliconMaskModel.preprocess(frame)
     if is_keras:
@@ -24,13 +33,8 @@ def process_frame(frame, silicon_mask_model, is_keras):
         input_layer = silicon_mask_model.get_inputs()[0].name
         prediction = silicon_mask_model.run(None, {input_layer: preproc_img})
 
-    prediction = get_scalar(prediction)
-    print(f"\nPrediction: {prediction}")
-    print("Live/Real") if prediction < SPOOF_TH else print("Spoof/Attack")
-
     del preproc_img
-
-    return prediction
+    return get_scalar(prediction)
 
 
 def main(media_path, model_path):
@@ -41,7 +45,8 @@ def main(media_path, model_path):
         SiliconMaskModel(model_path)
         if is_keras
         else ort.InferenceSession(
-            model_path, providers=["CPUExecutionProvider"]
+            model_path, providers=["CUDAExecutionProvider", 
+                                   "CPUExecutionProvider"]
         )
     )
 
@@ -55,7 +60,22 @@ def main(media_path, model_path):
         if not ret:
             break
 
-        process_frame(frame, silicon_mask_model, is_keras)
+        silicon_pred = process_frame(frame, silicon_mask_model, is_keras)
+
+        faces = DeepFace.extract_faces(
+            frame, 
+            detector_backend="yolov8", 
+            enforce_detection=False,
+            anti_spoofing=True
+        )
+
+        face = best_face(faces)
+        del faces
+        print(face['is_real'])
+        print(face['antispoof_score'])
+        print(f"Prediction: {silicon_pred}")
+        print("Live/Real") if silicon_pred < SPOOF_TH else print("Spoof/Attack")
+        print('\n')
 
         cv2.imshow('Frame', frame)
 

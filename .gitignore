@@ -54,6 +54,9 @@ data/*
 *.index
 *.data-*-of-*
 
+# Setup files
+*.egg-info
+
 # Flask stuff:
 instance/
 .webassets-cache
