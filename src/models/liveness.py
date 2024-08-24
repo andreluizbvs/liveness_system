@@ -119,7 +119,7 @@ class LivenessModel:
         )
         return model
 
-    def train(self, train_dataset, val_dataset, epochs=10, batch_size=32):
+    def train(self, train_dataset, val_dataset, epochs=10):
         checkpoint = ModelCheckpoint(
             self.best_weights_path,
             monitor="val_accuracy",
@@ -132,7 +132,6 @@ class LivenessModel:
             train_dataset,
             validation_data=val_dataset,
             epochs=epochs,
-            batch_size=batch_size,
             callbacks=[checkpoint],
         )
 

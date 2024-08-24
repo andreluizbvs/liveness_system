@@ -1,21 +1,37 @@
 import argparse
 
-from dataloader.dataset import create_dataset
+from dataloader.dataset import create_dataset, create_dataset_from_split
+from dataloader.celeba_spoof import get_data
 from models.liveness import LivenessModel
 from models.adversarial_attack import AdversarialModel
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
 
 def main(data_path, model_path, combine):
-    # Load architecture
+    print("Loading architecture...")
     liveness_model = LivenessModel(model_path, combine_frame_and_face=combine)
 
-    # Load data
-    train_dataset, val_dataset, test_dataset = create_dataset(
-        data_path, 
-        image_size=(liveness_model.img_size, liveness_model.img_size),
-        combine_frame_and_face=combine,
-    )
+    print("Loading data...")
+    if "silicon" in data_path:
+        train_dataset, val_dataset, test_dataset = create_dataset(
+            data_path,
+            image_size=(liveness_model.img_size, liveness_model.img_size),
+            combine_frame_and_face=combine,
+        )
+    else:
+        X_train, X_valid, X_test, y_train, y_valid, y_test = get_data()
+        train_dataset, val_dataset, test_dataset = create_dataset_from_split(
+            X_train,
+            X_valid,
+            X_test,
+            y_train,
+            y_valid,
+            y_test,
+            (liveness_model.img_size, liveness_model.img_size),
+            combine_frame_and_face=combine,
+        )
+
+    print(f"Shape of one sample: {train_dataset.take(1)}")
 
     liveness_model.train(train_dataset, val_dataset, epochs=5)
 

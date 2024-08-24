@@ -19,6 +19,7 @@ app.prepare(ctx_id=0, det_size=(640, 640))
 
 
 SEED_VALUE = 42
+BATCH_SIZE = 32
 dummy_image = tf.zeros([1, 224, 224, 3], dtype=tf.float32)
 
 def moire_pattern(image):
@@ -97,6 +98,53 @@ def extract_face(image):
         print(f"Error in extract_face: {e}")
         return dummy_image
 
+
+def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face=False):
+
+    # Define data augmentation pipeline
+    data_augmentation = tf.keras.Sequential(
+        [
+            RandomFlip("horizontal_and_vertical"),
+            RandomRotation(0.2),
+            RandomZoom(0.2),
+            RandomTranslation(0.1, 0.1),
+            RandomCrop(height=image_size[0], width=image_size[1]),
+        ]
+    )
+
+    # Apply data augmentation to the training dataset
+    train_dataset = train_dataset.map(
+        lambda x, y: (data_augmentation(x, training=True), y)
+    )
+
+    if combine_frame_and_face:
+        # Extract faces and create dual input pipeline
+        def preprocess(image, label):
+            face = tf.py_function(extract_face, [image], tf.float32)
+            face = tf.ensure_shape(face, [1, image_size[0], image_size[1], 3])
+            return (image, face), label
+    else:
+        def preprocess(image, label):
+            image = image / 255.0
+            image = image * 2.0 - 1.0
+            return image, label
+
+    train_dataset = train_dataset.map(preprocess)
+    val_dataset = val_dataset.map(preprocess)
+    test_dataset = test_dataset.map(preprocess)
+
+    train_dataset = train_dataset.batch(BATCH_SIZE)
+    val_dataset = val_dataset.batch(BATCH_SIZE)
+    test_dataset = test_dataset.batch(BATCH_SIZE)
+
+    # Prefetch the datasets for performance optimization
+    train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+    val_dataset = val_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+    test_dataset = test_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+
+    return train_dataset, val_dataset, test_dataset
+
+
 def create_dataset(
     data_dir, image_size, batch_size=1, test_size=0.3, combine_frame_and_face=False
 ):
@@ -119,17 +167,6 @@ def create_dataset(
         batch_size=batch_size,
     )
 
-    # Define data augmentation pipeline
-    data_augmentation = tf.keras.Sequential(
-        [
-            RandomFlip("horizontal_and_vertical"),
-            RandomRotation(0.2),
-            RandomZoom(0.2),
-            RandomTranslation(0.1, 0.1),
-            RandomCrop(height=image_size[0], width=image_size[1]),
-        ]
-    )
-
     # Print class names and their corresponding indices
     class_names = train_dataset.class_names
     print("Class names and their corresponding indices:", class_names)
@@ -141,40 +178,25 @@ def create_dataset(
     val_dataset = test_dataset.take(val_size)
     test_dataset = test_dataset.skip(val_size)
 
-    # Apply data augmentation to the training dataset
-    train_dataset = train_dataset.map(
-        lambda x, y: (data_augmentation(x, training=True), y)
-    )
+    return preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face)
 
-    def filter_none(entry, label):
-        if len(entry) != 2:
-            return True
-        _, face = entry
-        return tf.reduce_all(tf.not_equal(face, dummy_image))
 
-    if combine_frame_and_face:
-        # Extract faces and create dual input pipeline
-        def preprocess(image, label):
-            face = tf.py_function(extract_face, [image], tf.float32)
-            face = tf.ensure_shape(face, [1, image_size[0], image_size[1], 3])
-            return (image, face), label
-    else:
-        def preprocess(image, label):
-            image = image / 255.0
-            image = image * 2.0 - 1.0
-            return image, label
+def create_dataset_from_split(
+    X_train, X_valid, X_test, y_train, y_valid, y_test, image_size, combine_frame_and_face=False
+):
+    
+    X_train = tf.convert_to_tensor(X_train, dtype=tf.float16)
+    X_valid = tf.convert_to_tensor(X_valid, dtype=tf.float16)
+    X_test = tf.convert_to_tensor(X_test, dtype=tf.float16)
+    y_train = tf.convert_to_tensor(y_train, dtype=tf.float16)
+    y_valid = tf.convert_to_tensor(y_valid, dtype=tf.float16)
+    y_test = tf.convert_to_tensor(y_test, dtype=tf.float16)
 
-    train_dataset = train_dataset.map(preprocess)
-    val_dataset = val_dataset.map(preprocess)
-    test_dataset = test_dataset.map(preprocess)
+    print(X_train.shape, X_valid.shape, X_test.shape)
+    print(y_train.shape, y_valid.shape, y_test.shape)
 
-    print("Training dataset size:", len(list(train_dataset)))
-    print("Validation dataset size:", len(list(val_dataset)))
-    print("Testing dataset size:", len(list(test_dataset)))
+    train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    val_dataset = tf.data.Dataset.from_tensor_slices((X_valid, y_valid))
+    test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
-    # Prefetch the datasets for performance optimization
-    train_dataset = train_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-    val_dataset = val_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-    test_dataset = test_dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
-    return train_dataset, val_dataset, test_dataset
+    return preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face)

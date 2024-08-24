@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 SEED_VALUE = 42
+IMG_SIZE = 224
 
 def get_ratio_bbox_and_image(full_img_path, bound_box_path):
     img = cv2.imread(full_img_path)
@@ -70,7 +71,7 @@ def get_data():
 
     count_live = 0
     count_spoof = 0
-    dim = (32, 32)
+    dim = (IMG_SIZE, IMG_SIZE)
     count_limit_live = 5000
     count_limit_spoof = 5000
 
