@@ -1,5 +1,9 @@
+import cv2
 import numpy as np
+import os
 
+import tf2onnx
+import tensorflow as tf
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Model
@@ -12,12 +16,17 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.preprocessing import image
 
 
+IMG_SIZE = 224
+
+
 class LivenessModel:
+    img_size = IMG_SIZE
+
     def __init__(
         self,
         model_path=None,
-        img_size=224,
-        best_weights_path="../ckpt/best_weights.keras",
+        img_size=IMG_SIZE,
+        best_weights_path="../ckpt/[frames] best_model.keras",
         combine_frame_and_face=False,
     ):
         self.img_size = img_size
@@ -45,6 +54,7 @@ class LivenessModel:
 
         if model_path:
             model.load_weights(model_path)
+            print(f"Model loaded from {model_path}")
 
         # Freeze the base model layers
         for layer in base_model.layers:
@@ -55,6 +65,7 @@ class LivenessModel:
             loss="binary_crossentropy",
             metrics=["accuracy", "precision", "recall"],
         )
+
         return model
 
     def __build_model_v2(self, model_path=None):
@@ -63,7 +74,7 @@ class LivenessModel:
             weights="imagenet",
             include_top=False,
             input_tensor=Input(shape=(self.img_size, self.img_size, 3)),
-            name="frame"
+            name="frame",
         )
         for layer in base_model_frame.layers:
             layer.name = f"frame_{layer.name}"
@@ -75,11 +86,11 @@ class LivenessModel:
             weights="imagenet",
             include_top=False,
             input_tensor=Input(shape=(self.img_size, self.img_size, 3)),
-            name="face"
+            name="face",
         )
         for layer in base_model_face.layers:
             layer.name = f"face_{layer.name}"
-        
+
         x_face = base_model_face.output
         x_face = GlobalAveragePooling2D()(x_face)
 
@@ -134,9 +145,33 @@ class LivenessModel:
     def predict(self, X):
         return self.model.predict(X, verbose=0)
 
-    def preprocess(self, img_path):
-        img = image.load_img(
-            img_path, target_size=(self.img_size, self.img_size)
+    @classmethod
+    def preprocess(cls, img_ref):
+        if isinstance(img_ref, str):
+            img_ref = image.load_img(
+                img_ref, target_size=(cls.img_size, cls.img_size)
+            )
+            img_ref = image.img_to_array(img_ref)
+        img_ref = cv2.resize(img_ref, (cls.img_size, cls.img_size))
+        img_ref = (img_ref / 255.0).astype(np.float32)
+        img_ref = img_ref * 2.0 - 1.0
+        return np.expand_dims(img_ref, axis=0)
+
+    def export_pb(self, export_path):
+        self.model.export(export_path)
+        print(f"Full TF Model exported to {export_path}")
+
+    def export_onnx(self, export_path):
+        spec = (
+            tf.TensorSpec(
+                (None, self.img_size, self.img_size, 3),
+                tf.float32,
+                name="input",
+            ),
         )
-        img_array = image.img_to_array(img)
-        return np.expand_dims(img_array, axis=0)
+        export_path = os.path.join(export_path, "silicon_mask_model.onnx")
+        model_proto, _ = tf2onnx.convert.from_keras(
+            self.model, input_signature=spec, output_path=export_path
+        )
+        print("Model converted to ONNX format:", export_path)
+        return model_proto

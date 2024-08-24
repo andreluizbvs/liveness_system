@@ -2,7 +2,6 @@ import random
 
 import cv2
 import numpy as np
-import torch
 import tensorflow as tf
 from tensorflow.keras.preprocessing import image_dataset_from_directory
 from tensorflow.keras.layers import (
@@ -19,7 +18,7 @@ app = FaceAnalysis()
 app.prepare(ctx_id=0, det_size=(640, 640))
 
 
-seed_value = 42
+SEED_VALUE = 42
 dummy_image = tf.zeros([1, 224, 224, 3], dtype=tf.float32)
 
 def moire_pattern(image):
@@ -106,7 +105,7 @@ def create_dataset(
         data_dir,
         validation_split=test_size,
         subset="training",
-        seed=seed_value,
+        seed=SEED_VALUE,
         image_size=image_size,
         batch_size=batch_size,
     )
@@ -115,7 +114,7 @@ def create_dataset(
         data_dir,
         validation_split=test_size,
         subset="validation",
-        seed=seed_value,
+        seed=SEED_VALUE,
         image_size=image_size,
         batch_size=batch_size,
     )
@@ -150,7 +149,7 @@ def create_dataset(
     def filter_none(entry, label):
         if len(entry) != 2:
             return True
-        image, face = entry
+        _, face = entry
         return tf.reduce_all(tf.not_equal(face, dummy_image))
 
     if combine_frame_and_face:
@@ -161,11 +160,13 @@ def create_dataset(
             return (image, face), label
     else:
         def preprocess(image, label):
+            image = image / 255.0
+            image = image * 2.0 - 1.0
             return image, label
 
-    train_dataset = train_dataset.map(preprocess).filter(filter_none)
-    val_dataset = val_dataset.map(preprocess).filter(filter_none)
-    test_dataset = test_dataset.map(preprocess).filter(filter_none)
+    train_dataset = train_dataset.map(preprocess)
+    val_dataset = val_dataset.map(preprocess)
+    test_dataset = test_dataset.map(preprocess)
 
     print("Training dataset size:", len(list(train_dataset)))
     print("Validation dataset size:", len(list(val_dataset)))

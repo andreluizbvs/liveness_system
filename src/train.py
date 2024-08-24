@@ -7,7 +7,7 @@ from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
 
 def main(data_path, model_path, combine):
-    # Train liveness detection model
+    # Load architecture
     liveness_model = LivenessModel(model_path, combine_frame_and_face=combine)
 
     # Load data
@@ -17,7 +17,7 @@ def main(data_path, model_path, combine):
         combine_frame_and_face=combine,
     )
 
-    liveness_model.train(train_dataset, val_dataset, epochs=2)
+    liveness_model.train(train_dataset, val_dataset, epochs=5)
 
     results = liveness_model.evaluate(test_dataset)
     f1 = (
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_path",
         default=None,
-        help="Path to the model directory to continue training",
+        help="Path to the model directory to resume training from",
     )
     parser.add_argument(
         "--combine",

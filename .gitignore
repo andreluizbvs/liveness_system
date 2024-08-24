@@ -51,6 +51,8 @@
 *.xls
 *.xlsx
 data/*
+*.index
+*.data-*-of-*
 
 # Flask stuff:
 instance/
