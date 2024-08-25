@@ -1,54 +1,40 @@
-import os
-
-import cv2
-import matplotlib.pyplot as plt
-import numpy as np
-import tf2onnx
 import tensorflow as tf
-import tensorflow_hub as hub
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
-from tensorflow.keras.models import Model
-from tensorflow.keras.preprocessing import image
+from huggingface_hub import from_pretrained_keras
 from tensorflow.keras.layers import (
+    Input,
     GlobalAveragePooling2D,
     Dense,
-    Input,
-    Concatenate,
+    Lambda
 )
-from silicone_mask import LossPlotterCallback
+
+from base_model import BaseModel
 
 
-IMG_SIZE = 224
-
-
-class FaceDepthModel:
-    img_size = IMG_SIZE
-
+class FaceDepthModel(BaseModel):
     def __init__(
         self,
         model_path=None,
-        img_size=IMG_SIZE,
-        best_weights_path="../ckpt/best_model.keras",
+        img_size=BaseModel.img_size,
+        best_weights_path="../ckpt/best_face_depth_model.keras",
     ):
-        self.img_size = img_size
-        self.best_weights_path = best_weights_path
+        super().__init__(img_size, best_weights_path)
         self.model = self.__build_model(model_path)
 
-    def __call__(self, X):
-        return self.predict(X)
 
     def __build_model(self, model_path=None):
-        # TODO: Correct the backbone model
-        backbone = hub.KerasLayer("https://tfhub.dev/google/monodepth2/1", trainable=False)
+        # Backbone to generate depth map
+        backbone = from_pretrained_keras("keras-io/monocular-depth-estimation", input_tensor=Input(shape=(self.img_size, self.img_size, 3)))
 
-        # Add a classification head
-        model = tf.keras.Sequential([
-            backbone,
-            tf.keras.layers.GlobalAveragePooling2D(),
-            tf.keras.layers.Dense(1024, activation='relu'),
-            tf.keras.layers.Dense(1, activation='signoid')
-        ])
+        inputs = Input(shape=(self.img_size, self.img_size, 3))
+        x = backbone(inputs)
+        x = Lambda(lambda t: 2 * ((t - tf.reduce_min(t)) / (tf.reduce_max(t) - tf.reduce_min(t))) - 1)(x)
+
+        # Add the classification head
+        x = GlobalAveragePooling2D()(x)
+        x = Dense(1024, activation='relu')(x)
+        outputs = Dense(1, activation='sigmoid')(x)
+
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
         if model_path:
             model.load_weights(model_path)
@@ -65,67 +51,3 @@ class FaceDepthModel:
         )
 
         return model
-
-
-    def train(self, train_dataset, val_dataset, epochs=10, patience=5):
-        checkpoint = ModelCheckpoint(
-            self.best_weights_path,
-            monitor="val_accuracy",
-            save_best_only=True,
-            mode="max",
-            verbose=1,
-        )
-        early_stopping = EarlyStopping(
-            monitor="val_accuracy",
-            patience=patience,
-            mode="max",
-            restore_best_weights=True,
-        )
-        loss_plotter = LossPlotterCallback()
-
-        self.model.fit(
-            train_dataset,
-            validation_data=val_dataset,
-            epochs=epochs,
-            callbacks=[checkpoint, early_stopping, loss_plotter],
-        )
-
-    def evaluate(self, test_dataset, weights_path=None):
-        if not weights_path:
-            weights_path = self.best_weights_path
-        self.model.load_weights(weights_path)
-        return self.model.evaluate(test_dataset, return_dict=True)
-
-    def predict(self, X):
-        return self.model.predict(X, verbose=0)
-
-    @classmethod
-    def preprocess(cls, img_ref):
-        if isinstance(img_ref, str):
-            img_ref = image.load_img(
-                img_ref, target_size=(cls.img_size, cls.img_size)
-            )
-            img_ref = image.img_to_array(img_ref)
-        img_ref = cv2.resize(img_ref, (cls.img_size, cls.img_size))
-        img_ref = (img_ref / 255.0).astype(np.float32)
-        img_ref = img_ref * 2.0 - 1.0
-        return np.expand_dims(img_ref, axis=0)
-
-    def export_pb(self, export_path):
-        self.model.export(export_path)
-        print(f"Full TF Model exported to {export_path}")
-
-    def export_onnx(self, export_path):
-        spec = (
-            tf.TensorSpec(
-                (None, self.img_size, self.img_size, 3),
-                tf.float32,
-                name="input",
-            ),
-        )
-        export_path = os.path.join(export_path, "face_depth_model.onnx")
-        model_proto, _ = tf2onnx.convert.from_keras(
-            self.model, input_signature=spec, output_path=export_path
-        )
-        print("Model converted to ONNX format:", export_path)
-        return model_proto
