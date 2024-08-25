@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 SEED_VALUE = 42
 IMG_SIZE = 224
 
+
 def get_ratio_bbox_and_image(full_img_path, bound_box_path):
     img = cv2.imread(full_img_path)
     real_h, real_w, _ = img.shape
@@ -64,7 +65,6 @@ def read_crop_img_with_bbox(full_img_path, bound_box_path):
 
 
 def get_padding_cropped_img(rootdir, dim, count_limit_live, count_limit_spoof):
-
     count_live = 0
     count_spoof = 0
     padding_cropped_storage = []
@@ -83,14 +83,22 @@ def get_padding_cropped_img(rootdir, dim, count_limit_live, count_limit_spoof):
                         full_img_path = imgs_path + img_path
                         bound_box_path = full_img_path[0:-4] + "_BB.txt"
                         x1, y1, w1, h1, img, real_w, real_h = (
-                            read_crop_img_with_bbox(full_img_path, bound_box_path)
+                            read_crop_img_with_bbox(
+                                full_img_path, bound_box_path
+                            )
                         )
                         ratio_bbox_and_image = get_ratio_bbox_and_image(
                             full_img_path, bound_box_path
                         )
                         x1_padding, y1_padding, w1_padding, h1_padding = (
                             get_padding_bbox_indices(
-                                x1, y1, w1, h1, real_w, real_h, ratio_bbox_and_image
+                                x1,
+                                y1,
+                                w1,
+                                h1,
+                                real_w,
+                                real_h,
+                                ratio_bbox_and_image,
                             )
                         )
                         padding_img = img[
@@ -98,8 +106,11 @@ def get_padding_cropped_img(rootdir, dim, count_limit_live, count_limit_spoof):
                             x1_padding : x1 + w1_padding,
                         ]
                         try:
-                            if (e == "live" and count_live >= count_limit_live) or (
-                                e == "spoof" and count_spoof >= count_limit_spoof
+                            if (
+                                e == "live" and count_live >= count_limit_live
+                            ) or (
+                                e == "spoof"
+                                and count_spoof >= count_limit_spoof
                             ):
                                 continue
                             resized_padding_img = cv2.resize(
@@ -129,13 +140,16 @@ def get_padding_cropped_img(rootdir, dim, count_limit_live, count_limit_spoof):
         if count_live >= count_limit_live and count_spoof >= count_limit_spoof:
             print("DONE Extracting ")
             break
-    
+
     print(f"Size of the dataset: {len(padding_cropped_storage)}")
     print(f"Size of the labels: {len(padding_cropped_labels)}")
     print(f"Shape of the image: {padding_cropped_storage[0].shape}")
     return padding_cropped_storage, padding_cropped_labels
 
-def get_images_and_labels(padding_cropped_storage, padding_cropped_labels, mode="train"):
+
+def get_images_and_labels(
+    padding_cropped_storage, padding_cropped_labels, mode="train"
+):
     # Save the numpy to NUMPYZ
     X = np.asarray(padding_cropped_storage)
     y = np.asarray(padding_cropped_labels)
@@ -158,38 +172,47 @@ def get_images_and_labels(padding_cropped_storage, padding_cropped_labels, mode=
     return X, y
 
 
-def get_data(lives = 5000, spoofs = 5000):
+def get_data(lives=5000, spoofs=5000):
     # Live Storage
 
     dim = (IMG_SIZE, IMG_SIZE)
     rootdir_train = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
     rootdir_test = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/test"
-    
-    test_proportion = 0.0
-    train_lives = int(lives * (1 - test_proportion))
-    train_spoofs = int(spoofs * (1 - test_proportion))
+
+    test_proportion = 0.3
+    train_lives = int(lives)
+    train_spoofs = int(spoofs)
     test_lives = int(lives * test_proportion)
     test_spoofs = int(spoofs * test_proportion)
 
-    padding_cropped_storage, padding_cropped_labels = get_padding_cropped_img(rootdir_train, dim, train_lives, train_spoofs)
-    X_train, y_train = get_images_and_labels(padding_cropped_storage, padding_cropped_labels, mode="train")
+    padding_cropped_storage, padding_cropped_labels = get_padding_cropped_img(
+        rootdir_train, dim, train_lives, train_spoofs
+    )
+    X_train, y_train = get_images_and_labels(
+        padding_cropped_storage, padding_cropped_labels, mode="train"
+    )
 
-    # test_padding_cropped_storage, test_padding_cropped_labels = get_padding_cropped_img(rootdir_test, dim, test_lives, test_spoofs)
-    # X_valid, y_valid = get_images_and_labels(test_padding_cropped_storage, test_padding_cropped_labels, mode="valid")
+    test_padding_cropped_storage, test_padding_cropped_labels = (
+        get_padding_cropped_img(rootdir_test, dim, test_lives, test_spoofs)
+    )
+    X_valid, y_valid = get_images_and_labels(
+        test_padding_cropped_storage, test_padding_cropped_labels, mode="valid"
+    )
 
-    # plt.figure(figsize=(10, 10))
-    # for i in range(25):
-    #     plt.subplot(5, 5, i + 1)
-    #     plt.xticks([])
-    #     plt.yticks([])
-    #     plt.grid(False)
-    #     plt.imshow(X[i][:, :, ::-1])
-    # plt.show()
+    plt.figure(figsize=(10, 10))
+    for i in range(25):
+        plt.subplot(5, 5, i + 1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        if i < 18:
+            plt.imshow(X_train[i][:, :, ::-1])
+        else:
+            plt.imshow(X_valid[i - 18][:, :, ::-1])
+    plt.show()
 
-    # print(X.shape)
-    # print(y.shape)
-    X_train, X_valid, y_train, y_valid = train_test_split(
-        X_train, y_train, test_size=0.3, random_state=SEED_VALUE
+    X_train, _, y_train, _ = train_test_split(
+        X_train, y_train, test_size=test_proportion, random_state=SEED_VALUE
     )
     X_valid, X_test, y_valid, y_test = train_test_split(
         X_valid, y_valid, test_size=0.5, random_state=SEED_VALUE
