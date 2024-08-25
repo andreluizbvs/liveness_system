@@ -5,7 +5,7 @@ import numpy as np
 import onnxruntime as ort
 from deepface import DeepFace
 
-from models.liveness import LivenessModel as SiliconMaskModel
+from src.models.silicone_mask import SiliconeMaskModel
 
 
 SPOOF_TH = 0.5
@@ -26,7 +26,7 @@ def best_face(faces):
 
 
 def process_frame(frame, silicon_mask_model, is_keras):
-    preproc_img = SiliconMaskModel.preprocess(frame)
+    preproc_img = SiliconeMaskModel.preprocess(frame)
     if is_keras:
         prediction = silicon_mask_model.predict(preproc_img)
     else:
@@ -42,7 +42,7 @@ def main(media_path, model_path):
     is_keras = model_path.endswith(".keras")
 
     silicon_mask_model = (
-        SiliconMaskModel(model_path)
+        SiliconeMaskModel(model_path)
         if is_keras
         else ort.InferenceSession(
             model_path, providers=["CUDAExecutionProvider", 
@@ -91,7 +91,7 @@ def main(media_path, model_path):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Run liveness detection on an image."
+        description="Run liveness detection on an image or video."
     )
     parser.add_argument("media_path", help="Path to the image or video file")
     parser.add_argument(

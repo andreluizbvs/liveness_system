@@ -66,7 +66,7 @@ class LossPlotterCallback(Callback):
         plt.show()
 
 
-class LivenessModel:
+class SiliconeMaskModel:
     img_size = IMG_SIZE
 
     def __init__(

@@ -63,28 +63,23 @@ def read_crop_img_with_bbox(full_img_path, bound_box_path):
     return x1, y1, w1, h1, img, real_w, real_h
 
 
-def get_data(lives = 5000, spoofs = 5000):
-    # Live Storage
-    padding_cropped_storage = []
-    img_names = []
-    padding_cropped_labels = []
+def get_padding_cropped_img(rootdir, dim, count_limit_live, count_limit_spoof):
 
     count_live = 0
     count_spoof = 0
-    dim = (IMG_SIZE, IMG_SIZE)
-    count_limit_live = lives
-    count_limit_spoof = spoofs
+    padding_cropped_storage = []
+    padding_cropped_labels = []
+    img_names = []
 
-    rootdir_train = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
-    for file in os.listdir(rootdir_train):
+    for file in os.listdir(rootdir):
         # file is 1, 1000, ..... 10029,...... => Name of folder
-        d = os.path.join(rootdir_train, file)
+        d = os.path.join(rootdir, file)
         if os.path.isdir(d):
             for e in os.listdir(d):
                 # e is "live" of "spoof"
                 imgs_path = d + "/" + e + "/"
                 for img_path in os.listdir(imgs_path):
-                    if img_path.endswith(".jpg"):
+                    if img_path.endswith(".jpg") or img_path.endswith(".png"):
                         full_img_path = imgs_path + img_path
                         bound_box_path = full_img_path[0:-4] + "_BB.txt"
                         x1, y1, w1, h1, img, real_w, real_h = (
@@ -134,14 +129,20 @@ def get_data(lives = 5000, spoofs = 5000):
         if count_live >= count_limit_live and count_spoof >= count_limit_spoof:
             print("DONE Extracting ")
             break
+    
+    print(f"Size of the dataset: {len(padding_cropped_storage)}")
+    print(f"Size of the labels: {len(padding_cropped_labels)}")
+    print(f"Shape of the image: {padding_cropped_storage[0].shape}")
+    return padding_cropped_storage, padding_cropped_labels
 
+def get_images_and_labels(padding_cropped_storage, padding_cropped_labels, mode="train"):
     # Save the numpy to NUMPYZ
     X = np.asarray(padding_cropped_storage)
     y = np.asarray(padding_cropped_labels)
-    np.savez("anti_spoofing_data.npz", X, y)
+    np.savez(f"anti_spoofing_data_{mode}.npz", X, y)
     print("Data saved in npz file.")
 
-    anti_spoofing_data = np.load("anti_spoofing_data.npz")
+    anti_spoofing_data = np.load(f"anti_spoofing_data_{mode}.npz")
     X, y = anti_spoofing_data["arr_0"], anti_spoofing_data["arr_1"]
     check_live_label = 0
     check_spoof_label = 0
@@ -154,6 +155,27 @@ def get_data(lives = 5000, spoofs = 5000):
         f"There are 2 classes. Number of lives is {check_live_label} "
         f"and number of spoofs is {check_spoof_label}"
     )
+    return X, y
+
+
+def get_data(lives = 5000, spoofs = 5000):
+    # Live Storage
+
+    dim = (IMG_SIZE, IMG_SIZE)
+    rootdir_train = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
+    rootdir_test = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/test"
+    
+    test_proportion = 0.0
+    train_lives = int(lives * (1 - test_proportion))
+    train_spoofs = int(spoofs * (1 - test_proportion))
+    test_lives = int(lives * test_proportion)
+    test_spoofs = int(spoofs * test_proportion)
+
+    padding_cropped_storage, padding_cropped_labels = get_padding_cropped_img(rootdir_train, dim, train_lives, train_spoofs)
+    X_train, y_train = get_images_and_labels(padding_cropped_storage, padding_cropped_labels, mode="train")
+
+    # test_padding_cropped_storage, test_padding_cropped_labels = get_padding_cropped_img(rootdir_test, dim, test_lives, test_spoofs)
+    # X_valid, y_valid = get_images_and_labels(test_padding_cropped_storage, test_padding_cropped_labels, mode="valid")
 
     # plt.figure(figsize=(10, 10))
     # for i in range(25):
@@ -164,10 +186,10 @@ def get_data(lives = 5000, spoofs = 5000):
     #     plt.imshow(X[i][:, :, ::-1])
     # plt.show()
 
-    print(X.shape)
-    print(y.shape)
+    # print(X.shape)
+    # print(y.shape)
     X_train, X_valid, y_train, y_valid = train_test_split(
-        X, y, test_size=0.3, random_state=SEED_VALUE
+        X_train, y_train, test_size=0.3, random_state=SEED_VALUE
     )
     X_valid, X_test, y_valid, y_test = train_test_split(
         X_valid, y_valid, test_size=0.5, random_state=SEED_VALUE

@@ -5,7 +5,6 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from deepface import DeepFace
-from PIL import Image
 from tensorflow.keras.preprocessing import image_dataset_from_directory
 from tensorflow.keras.layers import (
     RandomFlip,
@@ -82,19 +81,24 @@ def apply_custom_augmentation(image):
     augmentation = random.choice(augmentations)
     return augmentation(image)
 
+
 def extract_face(image):
     try:
         image = image.numpy()
         image = image.astype(np.uint8)
         image = image[0]
-        
-        faces = DeepFace.extract_faces(image, detector_backend="yolov8", enforce_detection=False)
+
+        faces = DeepFace.extract_faces(
+            image, detector_backend="yolov8", enforce_detection=False
+        )
         if len(faces) > 0 and faces[0]["confidence"] > 0.5:
-            bbox = faces[0]['facial_area'].astype(int)
+            bbox = faces[0]["facial_area"].astype(int)
             x1, y1, w, h = bbox
-            face = image[y1:y1+h, x1:x1+w]
-            return tf.expand_dims(tf.convert_to_tensor(face, dtype=tf.float32), 0)
-        
+            face = image[y1 : y1 + h, x1 : x1 + w]
+            return tf.expand_dims(
+                tf.convert_to_tensor(face, dtype=tf.float32), 0
+            )
+
         # print("No face detected.")
         return dummy_image
     except Exception as e:
@@ -102,8 +106,13 @@ def extract_face(image):
         return dummy_image
 
 
-def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face=False):
-
+def preprocess_data(
+    train_dataset,
+    val_dataset,
+    test_dataset,
+    image_size,
+    combine_frame_and_face=False,
+):
     # Define data augmentation pipeline (TF + Albumentations)
     data_augmentation = tf.keras.Sequential(
         [
@@ -118,14 +127,18 @@ def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combin
         ]
     )
 
-    alb_augs = A.Compose([
-        A.MotionBlur(p=0.1),
-        A.CoarseDropout(p=0.1)
-    ])
+    alb_augs = A.Compose(
+        [
+            A.MotionBlur(p=0.1), 
+            A.CoarseDropout(p=0.1)
+        ]
+    )
 
     def augment(image, label):
         image = data_augmentation(image, training=True)
-        image = tf.numpy_function(lambda img: alb_augs(image=img)['image'], [image], tf.float32)
+        image = tf.numpy_function(
+            lambda img: alb_augs(image=img)["image"], [image], tf.float32
+        )
         image.set_shape(image_size + (3,))
         return image, label
 
@@ -138,6 +151,7 @@ def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combin
             face = tf.ensure_shape(face, [1, image_size[0], image_size[1], 3])
             return (image, face), label
     else:
+
         def preprocess(image, label):
             image = image / 255.0
             mean = [0.485, 0.456, 0.406]
@@ -163,7 +177,11 @@ def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combin
 
 
 def create_dataset(
-    data_dir, image_size, batch_size=1, test_size=0.3, combine_frame_and_face=False
+    data_dir,
+    image_size,
+    batch_size=1,
+    test_size=0.3,
+    combine_frame_and_face=False,
 ):
     # Load the dataset from the directory
     train_dataset = image_dataset_from_directory(
@@ -195,13 +213,25 @@ def create_dataset(
     val_dataset = test_dataset.take(val_size)
     test_dataset = test_dataset.skip(val_size)
 
-    return preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face)
+    return preprocess_data(
+        train_dataset,
+        val_dataset,
+        test_dataset,
+        image_size,
+        combine_frame_and_face,
+    )
 
 
 def create_dataset_from_split(
-    X_train, X_valid, X_test, y_train, y_valid, y_test, image_size=IMG_SIZE, combine_frame_and_face=False
+    X_train,
+    X_valid,
+    X_test,
+    y_train,
+    y_valid,
+    y_test,
+    image_size=IMG_SIZE,
+    combine_frame_and_face=False,
 ):
-    
     X_train = tf.convert_to_tensor(X_train, dtype=tf.float16)
     X_valid = tf.convert_to_tensor(X_valid, dtype=tf.float16)
     X_test = tf.convert_to_tensor(X_test, dtype=tf.float16)
@@ -216,4 +246,10 @@ def create_dataset_from_split(
     val_dataset = tf.data.Dataset.from_tensor_slices((X_valid, y_valid))
     test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
-    return preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face)
+    return preprocess_data(
+        train_dataset,
+        val_dataset,
+        test_dataset,
+        image_size,
+        combine_frame_and_face,
+    )
