@@ -1,22 +1,69 @@
-import cv2
-import numpy as np
 import os
 
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
 import tf2onnx
 import tensorflow as tf
 from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
 from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers import (
     GlobalAveragePooling2D,
     Dense,
     Input,
     Concatenate,
 )
-from tensorflow.keras.preprocessing import image
 
 
 IMG_SIZE = 224
+
+
+class LossPlotterCallback(Callback):
+    def __init__(self):
+        super(LossPlotterCallback, self).__init__()
+        self.train_losses = []
+        self.val_losses = []
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.train_losses.append(logs.get("loss"))
+        self.val_losses.append(logs.get("val_loss"))
+        plt.figure()
+        plt.plot(
+            range(1, len(self.train_losses) + 1),
+            self.train_losses,
+            label="Training Loss",
+        )
+        plt.plot(
+            range(1, len(self.val_losses) + 1),
+            self.val_losses,
+            label="Validation Loss",
+        )
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.title(f"Training and Validation Loss Epoch {epoch}")
+        plt.savefig("loss_plot.png")
+
+    def on_train_end(self):
+        plt.figure()
+        plt.plot(
+            range(1, len(self.train_losses) + 1),
+            self.train_losses,
+            label="Training Loss",
+        )
+        plt.plot(
+            range(1, len(self.val_losses) + 1),
+            self.val_losses,
+            label="Validation Loss",
+        )
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.title("Final Training and Validation Loss Plot")
+        plt.savefig("final_loss_plot.png")
+        plt.show()
 
 
 class LivenessModel:
@@ -127,18 +174,19 @@ class LivenessModel:
             mode="max",
             verbose=1,
         )
-        early_stopping = tf.keras.callbacks.EarlyStopping(
+        early_stopping = EarlyStopping(
             monitor="val_accuracy",
             patience=patience,
             mode="max",
             restore_best_weights=True,
         )
+        loss_plotter = LossPlotterCallback()
 
         self.model.fit(
             train_dataset,
             validation_data=val_dataset,
             epochs=epochs,
-            callbacks=[checkpoint, early_stopping],
+            callbacks=[checkpoint, early_stopping, loss_plotter],
         )
 
     def evaluate(self, test_dataset, weights_path=None):
