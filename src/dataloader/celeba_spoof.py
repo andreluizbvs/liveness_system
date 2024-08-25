@@ -63,7 +63,7 @@ def read_crop_img_with_bbox(full_img_path, bound_box_path):
     return x1, y1, w1, h1, img, real_w, real_h
 
 
-def get_data():
+def get_data(lives = 5000, spoofs = 5000):
     # Live Storage
     padding_cropped_storage = []
     img_names = []
@@ -72,8 +72,8 @@ def get_data():
     count_live = 0
     count_spoof = 0
     dim = (IMG_SIZE, IMG_SIZE)
-    count_limit_live = 5000
-    count_limit_spoof = 5000
+    count_limit_live = lives
+    count_limit_spoof = spoofs
 
     rootdir_train = "../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/train"
     for file in os.listdir(rootdir_train):

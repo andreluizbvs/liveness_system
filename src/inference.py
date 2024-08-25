@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser.add_argument("media_path", help="Path to the image or video file")
     parser.add_argument(
         "--model_path",
-        default="../ckpt/[frames] best_model.keras",
+        default="../ckpt/best_model.keras",
         help="Path to the model file to run inference from",
     )
     args = parser.parse_args()

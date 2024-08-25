@@ -26,7 +26,7 @@ class LivenessModel:
         self,
         model_path=None,
         img_size=IMG_SIZE,
-        best_weights_path="../ckpt/[frames] best_model.keras",
+        best_weights_path="../ckpt/best_model.keras",
         combine_frame_and_face=False,
     ):
         self.img_size = img_size
@@ -119,7 +119,7 @@ class LivenessModel:
         )
         return model
 
-    def train(self, train_dataset, val_dataset, epochs=10):
+    def train(self, train_dataset, val_dataset, epochs=10, patience=5):
         checkpoint = ModelCheckpoint(
             self.best_weights_path,
             monitor="val_accuracy",
@@ -127,12 +127,18 @@ class LivenessModel:
             mode="max",
             verbose=1,
         )
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            monitor="val_accuracy",
+            patience=patience,
+            mode="max",
+            restore_best_weights=True,
+        )
 
         self.model.fit(
             train_dataset,
             validation_data=val_dataset,
             epochs=epochs,
-            callbacks=[checkpoint],
+            callbacks=[checkpoint, early_stopping],
         )
 
     def evaluate(self, test_dataset, weights_path=None):

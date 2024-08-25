@@ -7,7 +7,10 @@ from models.adversarial_attack import AdversarialModel
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
 
-def main(data_path, model_path, combine):
+amount_lives = amount_spoofs = 5000
+
+
+def main(data_path, model_path, epochs, patience, combine):
     print("Loading architecture...")
     liveness_model = LivenessModel(model_path, combine_frame_and_face=combine)
 
@@ -19,7 +22,10 @@ def main(data_path, model_path, combine):
             combine_frame_and_face=combine,
         )
     else:
-        X_train, X_valid, X_test, y_train, y_valid, y_test = get_data()
+        X_train, X_valid, X_test, y_train, y_valid, y_test = get_data(
+            amount_lives, amount_spoofs
+        )
+        print("Create dataset from split...")
         train_dataset, val_dataset, test_dataset = create_dataset_from_split(
             X_train,
             X_valid,
@@ -27,13 +33,15 @@ def main(data_path, model_path, combine):
             y_train,
             y_valid,
             y_test,
-            (liveness_model.img_size, liveness_model.img_size),
+            image_size=(liveness_model.img_size, liveness_model.img_size),
             combine_frame_and_face=combine,
         )
 
     print(f"Shape of one sample: {train_dataset.take(1)}")
 
-    liveness_model.train(train_dataset, val_dataset, epochs=5)
+    liveness_model.train(
+        train_dataset, val_dataset, epochs=epochs, patience=patience
+    )
 
     results = liveness_model.evaluate(test_dataset)
     f1 = (
@@ -76,10 +84,24 @@ if __name__ == "__main__":
         help="Path to the model directory to resume training from",
     )
     parser.add_argument(
+        "--epochs", default=150, help="Number of epochs to train the model"
+    )
+    parser.add_argument(
+        "--patience",
+        default=20,
+        help="Number of epochs to wait for early stopping",
+    )
+    parser.add_argument(
         "--combine",
         default=False,
         help="Combine frame and face features",
     )
     args = parser.parse_args()
 
-    main(args.data_path, args.model_path, args.combine)
+    main(
+        args.data_path,
+        args.model_path,
+        args.epochs,
+        args.patience,
+        args.combine,
+    )

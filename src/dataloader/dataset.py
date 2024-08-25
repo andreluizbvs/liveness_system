@@ -1,8 +1,11 @@
 import random
 
+import albumentations as A
 import cv2
 import numpy as np
 import tensorflow as tf
+from deepface import DeepFace
+from PIL import Image
 from tensorflow.keras.preprocessing import image_dataset_from_directory
 from tensorflow.keras.layers import (
     RandomFlip,
@@ -10,17 +13,18 @@ from tensorflow.keras.layers import (
     RandomZoom,
     RandomTranslation,
     RandomCrop,
+    RandomBrightness,
+    RandomContrast,
+    GaussianNoise,
 )
-from PIL import Image
-from insightface.app import FaceAnalysis
-
-app = FaceAnalysis()
-app.prepare(ctx_id=0, det_size=(640, 640))
 
 
+# Constants
 SEED_VALUE = 42
 BATCH_SIZE = 32
-dummy_image = tf.zeros([1, 224, 224, 3], dtype=tf.float32)
+IMG_SIZE = 224
+dummy_image = tf.zeros([1, IMG_SIZE, IMG_SIZE, 3], dtype=tf.float32)
+
 
 def moire_pattern(image):
     # Convert the image to grayscale
@@ -84,12 +88,11 @@ def extract_face(image):
         image = image.astype(np.uint8)
         image = image[0]
         
-        faces = app.get(image)
-        if len(faces) > 0 and faces[0].det_score > 0.5:
-            bbox = faces[0].bbox.astype(int)
-            x1, y1, x2, y2 = bbox
-            face = image[int(y1):int(y2), int(x1):int(x2)]
-            face = np.array(Image.fromarray(face, mode="RGB").resize((224, 224)))
+        faces = DeepFace.extract_faces(image, detector_backend="yolov8", enforce_detection=False)
+        if len(faces) > 0 and faces[0]["confidence"] > 0.5:
+            bbox = faces[0]['facial_area'].astype(int)
+            x1, y1, w, h = bbox
+            face = image[y1:y1+h, x1:x1+w]
             return tf.expand_dims(tf.convert_to_tensor(face, dtype=tf.float32), 0)
         
         # print("No face detected.")
@@ -101,21 +104,32 @@ def extract_face(image):
 
 def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combine_frame_and_face=False):
 
-    # Define data augmentation pipeline
+    # Define data augmentation pipeline (TF + Albumentations)
     data_augmentation = tf.keras.Sequential(
         [
-            RandomFlip("horizontal_and_vertical"),
+            RandomFlip("horizontal"),
             RandomRotation(0.2),
             RandomZoom(0.2),
             RandomTranslation(0.1, 0.1),
             RandomCrop(height=image_size[0], width=image_size[1]),
+            RandomBrightness(0.1),
+            RandomContrast(0.1),
+            GaussianNoise(0.1)
         ]
     )
 
-    # Apply data augmentation to the training dataset
-    train_dataset = train_dataset.map(
-        lambda x, y: (data_augmentation(x, training=True), y)
-    )
+    alb_augs = A.Compose([
+        A.MotionBlur(p=0.1),
+        A.CoarseDropout(p=0.1)
+    ])
+
+    def augment(image, label):
+        image = data_augmentation(image, training=True)
+        image = tf.numpy_function(lambda img: alb_augs(image=img)['image'], [image], tf.float32)
+        image.set_shape(image_size + (3,))
+        return image, label
+
+    train_dataset = train_dataset.map(augment)
 
     if combine_frame_and_face:
         # Extract faces and create dual input pipeline
@@ -126,6 +140,9 @@ def preprocess_data(train_dataset, val_dataset, test_dataset, image_size, combin
     else:
         def preprocess(image, label):
             image = image / 255.0
+            mean = [0.485, 0.456, 0.406]
+            std = [0.229, 0.224, 0.225]
+            image = (image - mean) / std
             image = image * 2.0 - 1.0
             return image, label
 
@@ -182,7 +199,7 @@ def create_dataset(
 
 
 def create_dataset_from_split(
-    X_train, X_valid, X_test, y_train, y_valid, y_test, image_size, combine_frame_and_face=False
+    X_train, X_valid, X_test, y_train, y_valid, y_test, image_size=IMG_SIZE, combine_frame_and_face=False
 ):
     
     X_train = tf.convert_to_tensor(X_train, dtype=tf.float16)
