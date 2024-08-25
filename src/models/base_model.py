@@ -74,13 +74,13 @@ class BaseModel(ABC):
 
 
     @abstractmethod
-    def __build_model(self):
+    def _build_model(self):
         pass
 
 
     def load_weights(self, model_path):
         if model_path:
-            self.model.load_weights(model_path)s
+            self.model.load_weights(model_path)
             print(f"Model loaded from {model_path}")
 
 

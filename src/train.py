@@ -3,6 +3,7 @@ import argparse
 from dataloader.dataset import create_dataset, create_dataset_from_split
 from dataloader.celeba_spoof import get_data
 from src.models.silicone_mask import SiliconeMaskModel
+from src.models.depth import FaceDepthModel
 from models.adversarial_attack import AdversarialModel
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
@@ -10,15 +11,21 @@ from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 amount_lives = amount_spoofs = 5000
 
 
-def main(data_path, model_path, epochs, patience, combine):
+def main(data_path, model_path, model_name, epochs, patience, combine):
     print("Loading architecture...")
-    silicone_model = SiliconeMaskModel(model_path, combine_frame_and_face=combine)
+
+    if model_name == "silicone":
+        model = SiliconeMaskModel(model_path, combine_frame_and_face=combine)
+    elif model_name == "depth":
+        model = FaceDepthModel()
+    else:
+        raise ValueError("Model name not recognized")
 
     print("Loading data...")
     if "silicon" in data_path:
         train_dataset, val_dataset, test_dataset = create_dataset(
             data_path,
-            image_size=(silicone_model.img_size, silicone_model.img_size),
+            image_size=(model.img_size, model.img_size),
             combine_frame_and_face=combine,
         )
     else:
@@ -33,17 +40,17 @@ def main(data_path, model_path, epochs, patience, combine):
             y_train,
             y_valid,
             y_test,
-            image_size=(silicone_model.img_size, silicone_model.img_size),
+            image_size=(model.img_size, model.img_size),
             combine_frame_and_face=combine,
         )
 
     print(f"Shape of one sample: {train_dataset.take(1)}")
 
-    silicone_model.train(
+    model.train(
         train_dataset, val_dataset, epochs=epochs, patience=patience
     )
 
-    results = silicone_model.evaluate(test_dataset)
+    results = model.evaluate(test_dataset)
     f1 = (
         2.0
         * (results["precision"] * results["recall"])
@@ -58,7 +65,7 @@ def main(data_path, model_path, epochs, patience, combine):
     )
 
     # # Test adversarial attacks
-    # adversarial_model = AdversarialModel(silicone_model)
+    # adversarial_model = AdversarialModel(model)
     # X_adv = adversarial_model.generate_adversarial_examples(X_val)
     # y_adv_pred = adversarial_model.test_adversarial_examples(X_adv)
     # adv_accuracy, adv_precision, adv_recall = evaluate_model(y_val, y_adv_pred)
@@ -84,6 +91,11 @@ if __name__ == "__main__":
         help="Path to the model directory to resume training from",
     )
     parser.add_argument(
+        "--model_name",
+        default="silicone",
+        help="Model name to train",
+    )
+    parser.add_argument(
         "--epochs", default=150, help="Number of epochs to train the model"
     )
     parser.add_argument(
@@ -101,6 +113,7 @@ if __name__ == "__main__":
     main(
         args.data_path,
         args.model_path,
+        args.model_name,
         args.epochs,
         args.patience,
         args.combine,

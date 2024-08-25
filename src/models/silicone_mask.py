@@ -8,7 +8,7 @@ from tensorflow.keras.layers import (
     Concatenate,
 )
 
-from base_model import BaseModel
+from src.models.base_model import BaseModel
 
 
 class SiliconeMaskModel(BaseModel):
@@ -22,13 +22,13 @@ class SiliconeMaskModel(BaseModel):
     ):
         super().__init__(img_size, best_weights_path)
         self.model = (
-            self.__build_model_v2(model_path)
+            self._build_model_v2(model_path)
             if combine_frame_and_face
-            else self.__build_model(model_path)
+            else self._build_model(model_path)
         )
 
 
-    def __build_model(self, model_path=None):
+    def _build_model(self, model_path=None):
         base_model = ResNet50(
             weights="imagenet",
             include_top=False,
@@ -56,7 +56,7 @@ class SiliconeMaskModel(BaseModel):
 
         return model
 
-    def __build_model_v2(self, model_path=None):
+    def _build_model_v2(self, model_path=None):
         # Base model for the video frame
         base_model_frame = ResNet50(
             weights="imagenet",

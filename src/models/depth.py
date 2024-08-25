@@ -4,10 +4,20 @@ from tensorflow.keras.layers import (
     Input,
     GlobalAveragePooling2D,
     Dense,
-    Lambda
+    Lambda,
+    Layer
 )
 
-from base_model import BaseModel
+from src.models.base_model import BaseModel
+
+
+class BackboneWrapper(Layer):
+    def __init__(self, backbone, **kwargs):
+        super(BackboneWrapper, self).__init__(**kwargs)
+        self.backbone = backbone
+
+    def call(self, inputs):
+        return self.backbone(inputs)
 
 
 class FaceDepthModel(BaseModel):
@@ -18,15 +28,15 @@ class FaceDepthModel(BaseModel):
         best_weights_path="../ckpt/best_face_depth_model.keras",
     ):
         super().__init__(img_size, best_weights_path)
-        self.model = self.__build_model(model_path)
+        self.model = self._build_model(model_path)
 
 
-    def __build_model(self, model_path=None):
+    def _build_model(self, model_path=None):
         # Backbone to generate depth map
         backbone = from_pretrained_keras("keras-io/monocular-depth-estimation", input_tensor=Input(shape=(self.img_size, self.img_size, 3)))
 
         inputs = Input(shape=(self.img_size, self.img_size, 3))
-        x = backbone(inputs)
+        x = BackboneWrapper(backbone)(inputs)
         x = Lambda(lambda t: 2 * ((t - tf.reduce_min(t)) / (tf.reduce_max(t) - tf.reduce_min(t))) - 1)(x)
 
         # Add the classification head
