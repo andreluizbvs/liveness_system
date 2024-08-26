@@ -158,6 +158,7 @@ def get_images_and_labels(
 
     anti_spoofing_data = np.load(f"anti_spoofing_data_{mode}.npz")
     X, y = anti_spoofing_data["arr_0"], anti_spoofing_data["arr_1"]
+    del anti_spoofing_data
     check_live_label = 0
     check_spoof_label = 0
     for i in y:
@@ -198,18 +199,6 @@ def get_data(lives=5000, spoofs=5000):
     X_valid, y_valid = get_images_and_labels(
         test_padding_cropped_storage, test_padding_cropped_labels, mode="valid"
     )
-
-    plt.figure(figsize=(10, 10))
-    for i in range(25):
-        plt.subplot(5, 5, i + 1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        if i < 18:
-            plt.imshow(X_train[i][:, :, ::-1])
-        else:
-            plt.imshow(X_valid[i - 18][:, :, ::-1])
-    plt.show()
 
     X_train, _, y_train, _ = train_test_split(
         X_train, y_train, test_size=test_proportion, random_state=SEED_VALUE

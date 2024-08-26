@@ -19,6 +19,15 @@ class BackboneWrapper(Layer):
     def call(self, inputs):
         return self.backbone(inputs)
 
+    def get_config(self):
+        config = super().get_config()
+        config.update(
+            {
+                "backbone": self.backbone,
+            }
+        )
+        return config
+
 
 class FaceDepthModel(BaseModel):
     def __init__(
@@ -30,19 +39,25 @@ class FaceDepthModel(BaseModel):
         super().__init__(img_size, best_weights_path)
         self.model = self._build_model(model_path)
 
-
     def _build_model(self, model_path=None):
         # Backbone to generate depth map
-        backbone = from_pretrained_keras("keras-io/monocular-depth-estimation", input_tensor=Input(shape=(self.img_size, self.img_size, 3)))
+        backbone = from_pretrained_keras(
+            "keras-io/monocular-depth-estimation",
+            input_tensor=Input(shape=(self.img_size, self.img_size, 3)),
+        )
 
         inputs = Input(shape=(self.img_size, self.img_size, 3))
         x = BackboneWrapper(backbone)(inputs)
-        x = Lambda(lambda t: 2 * ((t - tf.reduce_min(t)) / (tf.reduce_max(t) - tf.reduce_min(t))) - 1)(x)
+        
+        x = Lambda(
+            lambda t:
+            ((t - tf.reduce_min(t)) / (tf.reduce_max(t) - tf.reduce_min(t)))
+        )(x)
 
         # Add the classification head
         x = GlobalAveragePooling2D()(x)
-        x = Dense(1024, activation='relu')(x)
-        outputs = Dense(1, activation='sigmoid')(x)
+        x = Dense(1024, activation="relu")(x)
+        outputs = Dense(1, activation="sigmoid")(x)
 
         model = tf.keras.Model(inputs=inputs, outputs=outputs)
 

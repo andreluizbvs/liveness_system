@@ -142,22 +142,29 @@ def preprocess_data(
         image.set_shape(image_size + (3,))
         return image, label
 
+    
+    print("Applying data augmentation...")
     train_dataset = train_dataset.map(augment)
 
+    
     if combine_frame_and_face:
+        print("Combining frame and face...")
         # Extract faces and create dual input pipeline
         def preprocess(image, label):
             face = tf.py_function(extract_face, [image], tf.float32)
             face = tf.ensure_shape(face, [1, image_size[0], image_size[1], 3])
             return (image, face), label
     else:
-
+        print("Not combining frame and face...")
         def preprocess(image, label):
-            image = image / 255.0
-            mean = [0.485, 0.456, 0.406]
-            std = [0.229, 0.224, 0.225]
-            image = (image - mean) / std
-            image = image * 2.0 - 1.0
+            # # Z-score normalization + imagenet normalization + scaling to [-1, 1]
+            # image = (image - tf.reduce_mean(image)) / tf.math.reduce_std(image)
+            # mean = [0.485, 0.456, 0.406]
+            # std = [0.229, 0.224, 0.225]
+            # image = (image - mean) / std
+            # image = image * 2.0 - 1.0
+            image /= 127.5
+            image -= 1.0
             return image, label
 
     train_dataset = train_dataset.map(preprocess)
@@ -232,6 +239,7 @@ def create_dataset_from_split(
     image_size=IMG_SIZE,
     combine_frame_and_face=False,
 ):
+    # Ensure data is tf tensor floating point type
     X_train = tf.convert_to_tensor(X_train, dtype=tf.float16)
     X_valid = tf.convert_to_tensor(X_valid, dtype=tf.float16)
     X_test = tf.convert_to_tensor(X_test, dtype=tf.float16)
@@ -239,13 +247,20 @@ def create_dataset_from_split(
     y_valid = tf.convert_to_tensor(y_valid, dtype=tf.float16)
     y_test = tf.convert_to_tensor(y_test, dtype=tf.float16)
 
-    print(X_train.shape, X_valid.shape, X_test.shape)
-    print(y_train.shape, y_valid.shape, y_test.shape)
+    # Print shapes and data types for debugging
+    print("X_train shape:", X_train.shape, "dtype:", X_train.dtype)
+    print("X_valid shape:", X_valid.shape, "dtype:", X_valid.dtype)
+    print("X_test shape:", X_test.shape, "dtype:", X_test.dtype)
+    print("y_train shape:", y_train.shape, "dtype:", y_train.dtype)
+    print("y_valid shape:", y_valid.shape, "dtype:", y_valid.dtype)
+    print("y_test shape:", y_test.shape, "dtype:", y_test.dtype)
+
 
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
     val_dataset = tf.data.Dataset.from_tensor_slices((X_valid, y_valid))
     test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 
+    print("Preprocessing data...")
     return preprocess_data(
         train_dataset,
         val_dataset,

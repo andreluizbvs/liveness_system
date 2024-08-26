@@ -40,7 +40,7 @@ class LossPlotterCallback(Callback):
         plt.title(f"Training and Validation Loss Epoch {epoch}")
         plt.savefig("loss_plot.png")
 
-    def on_train_end(self):
+    def on_train_end(self, logs):
         plt.figure()
         plt.plot(
             range(1, len(self.train_losses) + 1),

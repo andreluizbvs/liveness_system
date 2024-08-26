@@ -1,5 +1,8 @@
 import argparse
 
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
 from dataloader.dataset import create_dataset, create_dataset_from_split
 from dataloader.celeba_spoof import get_data
 from src.models.silicone_mask import SiliconeMaskModel
@@ -8,7 +11,8 @@ from models.adversarial_attack import AdversarialModel
 from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
 
 
-amount_lives = amount_spoofs = 5000
+AMOUNT_LIVES = AMOUNT_SPOOFS = 5000
+SHOW_SAMPLES = False
 
 
 def main(data_path, model_path, model_name, epochs, patience, combine):
@@ -30,7 +34,7 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
         )
     else:
         X_train, X_valid, X_test, y_train, y_valid, y_test = get_data(
-            amount_lives, amount_spoofs
+            AMOUNT_LIVES, AMOUNT_SPOOFS
         )
         print("Create dataset from split...")
         train_dataset, val_dataset, test_dataset = create_dataset_from_split(
@@ -44,7 +48,16 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
             combine_frame_and_face=combine,
         )
 
-    print(f"Shape of one sample: {train_dataset.take(1)}")
+    # Get one image from train_dataset and show it
+    if SHOW_SAMPLES:
+        for images, _ in train_dataset.take(1):
+            # Display the image
+            for image in images:
+                plt.imshow(image.numpy())
+                plt.title("Image")
+                plt.axis("off")
+                plt.show()
+                input()
 
     model.train(
         train_dataset, val_dataset, epochs=epochs, patience=patience
