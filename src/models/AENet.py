@@ -1,12 +1,11 @@
 import math
 
-import cv2
 import numpy as np
 import tensorflow as tf
 import torch
 import torch.nn as nn
-import onnx
-from onnx2tf import convert
+import torchvision
+from PIL import Image
 
 BN = nn.BatchNorm2d
 
@@ -95,14 +94,14 @@ class Bottleneck(nn.Module):
         return out
 
 
-# AENet_C,S,G is based on ResNet-18
+# Auxiliary information Embedding Network (AENet) for face anti-spoofing
+# Based on ResNet-18
+
 class AENet(nn.Module):
     def __init__(
         self,
         block=BasicBlock,
         layers=[2, 2, 2, 2],
-        num_classes=1000,
-        sync_stats=False,
     ):
         global BN
 
@@ -209,43 +208,54 @@ class WrappedModel(tf.keras.Model):
         return self.model(inputs)
 
 
-if __name__ == "__main__":
-    base_ckpt_path = "../../ckpt/"
 
-    # # Load the PyTorch model architecture
-    # model = AENet()
+class Predictor:
 
-    # # Load the PyTorch model weights
-    # state_dict = torch.load(base_ckpt_path + "ckpt_iter.pth.tar")["state_dict"]
-    # new_state_dict = {}
-    # for k, v in state_dict.items():
-    #     new_key = k.replace("module.", "")
-    #     new_state_dict[new_key] = v
-    # del state_dict
-    # model.load_state_dict(new_state_dict, strict=False)
-    # model.eval()
+    def __init__(self):
+        self.net = AENet()
 
-    # dummy_input = torch.randn(1, 3, 224, 224)
+        base_ckpt_path = "../ckpt/"
+        state_dict = torch.load(base_ckpt_path + "ckpt_iter.pth.tar")["state_dict"]
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            new_key = k.replace("module.", "")
+            new_state_dict[new_key] = v
+        del state_dict
+        self.net.load_state_dict(new_state_dict, strict=False)
+        self.net.eval()
 
-    # # Export the model to ONNX format
-    # torch.onnx.export(model, dummy_input, base_ckpt_path + "aenet.onnx")
 
-    # # Load the ONNX model
-    # onnx_model = onnx.load(base_ckpt_path + "aenet.onnx")
+        self.new_width = self.new_height = 224
 
-    # Convert the ONNX model to a Keras model
-    # keras_model = convert(base_ckpt_path + "aenet.onnx", output_keras_v3=True)
+        self.transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((self.new_width, self.new_height)),
+            torchvision.transforms.ToTensor(),
+            ])
 
-    keras_model = tf.keras.models.load_model(base_ckpt_path + "aenet_float32_v3.keras")
-    
-    # Test the Keras model
-    img = cv2.imread("/home/pessoal/Documents/repos/liveness_system/data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/test/4930/spoof/495600.png")
-    # Preprocess the image
-    img = cv2.resize(img, (224, 224))
-    img = img.astype(np.float32)
-    img /= 127.5
-    img -= 1.0
-    img = np.expand_dims(img, axis=0)
-    img = tf.convert_to_tensor(img, dtype=tf.float32)
-    # Show result
-    print(keras_model(img))
+        self.net.cuda()
+        self.net.eval()
+
+    def preprocess_data(self, image):
+        print(image[0])
+        processed_data = Image.fromarray(image)
+        processed_data = self.transform(processed_data)
+        return processed_data
+
+    def eval_image(self, image):
+        data = torch.stack(image, dim=0)
+        channel = 3
+        input_var = data.view(-1, channel, data.size(2), data.size(3)).cuda()
+        with torch.no_grad():
+            rst = self.net(input_var).detach()
+        return rst.reshape(-1, 2)
+
+    def predict(self, images):
+        real_data = []
+        print(images[0])
+        for image in images:
+            data = self.preprocess_data(image)
+            real_data.append(data)
+        rst = self.eval_image(real_data)
+        rst = torch.nn.functional.softmax(rst, dim=1).cpu().numpy().copy()
+        probability = np.array(rst)
+        return probability

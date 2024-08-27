@@ -6,9 +6,12 @@ import onnxruntime as ort
 from deepface import DeepFace
 
 from src.models.silicone_mask import SiliconeMaskModel
+from src.models.AENet import Predictor
 
 
-SPOOF_TH = 0.5
+SPOOF_TH = 0.99
+SILICONE_TH = 0.5
+IMG_SIZE = 224
 
 
 def get_scalar(nested_list):
@@ -50,6 +53,8 @@ def main(media_path, model_path):
         )
     )
 
+    aenet_pred = Predictor()
+
     if media_path.endswith((".jpg", ".jpeg", ".png", ".bmp", ".tiff")):
         return process_frame(media_path, silicon_mask_model, is_keras)
 
@@ -71,10 +76,13 @@ def main(media_path, model_path):
 
         face = best_face(faces)
         del faces
-        print(face['is_real'])
-        print(face['antispoof_score'])
-        print(f"Prediction: {silicon_pred}")
-        print("Live/Real") if silicon_pred < SPOOF_TH else print("Spoof/Attack")
+
+        in_face = cv2.resize(face['face'], (IMG_SIZE, IMG_SIZE))
+        prob = aenet_pred.predict([in_face])[0][1]
+
+        print(f"DeepFace FAS predictor:{face['is_real']}. Score: {face['antispoof_score']}")
+        print(f"Non-silicone: {silicon_pred}") if silicon_pred < SILICONE_TH else print(f"Silicone mask {silicon_pred}!!!")
+        print("Live") if prob < SPOOF_TH else print("Spoof")
         print('\n')
 
         cv2.imshow('Frame', frame)

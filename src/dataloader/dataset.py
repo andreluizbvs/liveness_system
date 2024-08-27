@@ -1,7 +1,6 @@
 import random
 
 import albumentations as A
-import cv2
 import numpy as np
 import tensorflow as tf
 from deepface import DeepFace
@@ -17,69 +16,13 @@ from tensorflow.keras.layers import (
     GaussianNoise,
 )
 
+from src.dataloader.smart_data_aug import Moire
 
 # Constants
 SEED_VALUE = 42
 BATCH_SIZE = 32
 IMG_SIZE = 224
 dummy_image = tf.zeros([1, IMG_SIZE, IMG_SIZE, 3], dtype=tf.float32)
-
-
-def moire_pattern(image):
-    # Convert the image to grayscale
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Create a repetitive pattern
-    rows, cols = gray_image.shape
-    pattern = np.zeros((rows, cols), dtype=np.uint8)
-
-    # Define the frequency and amplitude of the pattern
-    frequency = 10
-    amplitude = 50
-
-    for i in range(rows):
-        for j in range(cols):
-            pattern[i, j] = 128 + amplitude * np.sin(
-                2 * np.pi * frequency * (i + j) / cols
-            )
-
-    # Blend the pattern with the original image
-    moire_image = cv2.addWeighted(gray_image, 0.5, pattern, 0.5, 0)
-    del gray_image, pattern
-
-    # Convert back to BGR
-    moire_image = cv2.cvtColor(moire_image, cv2.COLOR_GRAY2BGR)
-
-    return moire_image
-
-
-def color_distortion(image):
-    # Apply color distortion effect to the image
-    # Implementation code goes here
-    return image
-
-
-def facial_artifacts(image):
-    # Apply facial artifacts effect to the image
-    # Implementation code goes here
-    return image
-
-
-def gradient_noise(image):
-    # Apply gradient noise effect to the image
-    # Implementation code goes here
-    return image
-
-
-def apply_custom_augmentation(image):
-    augmentations = [
-        moire_pattern,
-        color_distortion,
-        facial_artifacts,
-        gradient_noise,
-    ]
-    augmentation = random.choice(augmentations)
-    return augmentation(image)
 
 
 def extract_face(image):
@@ -113,7 +56,7 @@ def preprocess_data(
     image_size,
     combine_frame_and_face=False,
 ):
-    # Define data augmentation pipeline (TF + Albumentations)
+    # Define traditional data augmentation pipeline (TF + Albumentations)
     data_augmentation = tf.keras.Sequential(
         [
             RandomFlip("horizontal"),
@@ -126,24 +69,29 @@ def preprocess_data(
             GaussianNoise(0.1)
         ]
     )
-
     alb_augs = A.Compose(
         [
             A.MotionBlur(p=0.1), 
             A.CoarseDropout(p=0.1)
         ]
     )
+    moire_augmenter = Moire()
 
     def augment(image, label):
+        # Applying traditional data augmentation
         image = data_augmentation(image, training=True)
         image = tf.numpy_function(
             lambda img: alb_augs(image=img)["image"], [image], tf.float32
         )
+         # Applying anti-spoof-focused data augmentation
+        if random.random() < 0.2:
+            image = tf.numpy_function(
+                lambda img: moire_augmenter(img.numpy()), [image], tf.float32
+            )
         image.set_shape(image_size + (3,))
         return image, label
 
     
-    print("Applying data augmentation...")
     train_dataset = train_dataset.map(augment)
 
     
