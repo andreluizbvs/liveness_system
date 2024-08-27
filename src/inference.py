@@ -78,11 +78,12 @@ def main(media_path, model_path):
         del faces
 
         in_face = cv2.resize(face['face'], (IMG_SIZE, IMG_SIZE))
+        in_face = (in_face * 255).astype(np.uint8)
         prob = aenet_pred.predict([in_face])[0][1]
 
         print(f"DeepFace FAS predictor:{face['is_real']}. Score: {face['antispoof_score']}")
         print(f"Non-silicone: {silicon_pred}") if silicon_pred < SILICONE_TH else print(f"Silicone mask {silicon_pred}!!!")
-        print("Live") if prob < SPOOF_TH else print("Spoof")
+        print(f"[AENet] Live: {prob}") if prob < SPOOF_TH else print(f"[AENet] Spoof: {prob}")
         print('\n')
 
         cv2.imshow('Frame', frame)
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("media_path", help="Path to the image or video file")
     parser.add_argument(
         "--model_path",
-        default="../ckpt/best_model.keras",
+        default="../ckpt/best_silicone_mask_model.keras",
         help="Path to the model file to run inference from",
     )
     args = parser.parse_args()

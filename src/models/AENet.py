@@ -236,7 +236,6 @@ class Predictor:
         self.net.eval()
 
     def preprocess_data(self, image):
-        print(image[0])
         processed_data = Image.fromarray(image)
         processed_data = self.transform(processed_data)
         return processed_data
@@ -251,7 +250,6 @@ class Predictor:
 
     def predict(self, images):
         real_data = []
-        print(images[0])
         for image in images:
             data = self.preprocess_data(image)
             real_data.append(data)
