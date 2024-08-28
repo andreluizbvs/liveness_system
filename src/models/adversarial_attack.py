@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
 
-from src.dataloader.smart_data_aug import add_moire_noise, digital_augment
+from src.dataloader.adversarial_attack_data_aug import add_moire_noise, digital_augment
 
 IMG_SIZE = 640
 

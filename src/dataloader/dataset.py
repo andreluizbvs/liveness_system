@@ -16,7 +16,7 @@ from tensorflow.keras.layers import (
     GaussianNoise,
 )
 
-from src.dataloader.smart_data_aug import Moire
+from src.models.adversarial_attack import AdversarialAttack
 
 # Constants
 SEED_VALUE = 42
@@ -66,16 +66,13 @@ def preprocess_data(
             RandomCrop(height=image_size[0], width=image_size[1]),
             RandomBrightness(0.1),
             RandomContrast(0.1),
-            GaussianNoise(0.1)
+            GaussianNoise(0.1),
         ]
     )
-    alb_augs = A.Compose(
-        [
-            A.MotionBlur(p=0.1), 
-            A.CoarseDropout(p=0.1)
-        ]
-    )
-    moire_augmenter = Moire()
+    alb_augs = A.Compose([A.MotionBlur(p=0.1), A.CoarseDropout(p=0.1)])
+    adv_att = AdversarialAttack()
+    manipulate_img = adv_att.manipulate_image
+    attack_prob = 0.2
 
     def augment(image, label):
         # Applying traditional data augmentation
@@ -83,20 +80,24 @@ def preprocess_data(
         image = tf.numpy_function(
             lambda img: alb_augs(image=img)["image"], [image], tf.float32
         )
-         # Applying anti-spoof-focused data augmentation
-        if random.random() < 0.2:
+        # ****** Applying anti-spoof-focused data augmentation ******
+        # To test the model against adversarial attacks, we can't apply 
+        # adversarial attack data augmentation to the training set, only to 
+        # the testset. After obtaining the evaluation metrics, we can add the 
+        # adversarial attack data augmentation to the training set and retrain 
+        # the model to see if the it became robust to adversarial attacks.
+        if random.random() < attack_prob:
             image = tf.numpy_function(
-                lambda img: moire_augmenter(img.numpy()), [image], tf.float32
+                lambda img: manipulate_img(img.numpy()), [image], tf.float32
             )
         image.set_shape(image_size + (3,))
         return image, label
 
-    
     train_dataset = train_dataset.map(augment)
 
-    
     if combine_frame_and_face:
         print("Combining frame and face...")
+
         # Extract faces and create dual input pipeline
         def preprocess(image, label):
             face = tf.py_function(extract_face, [image], tf.float32)
@@ -104,6 +105,7 @@ def preprocess_data(
             return (image, face), label
     else:
         print("Not combining frame and face...")
+
         def preprocess(image, label):
             # # Z-score normalization + imagenet normalization + scaling to [-1, 1]
             # image = (image - tf.reduce_mean(image)) / tf.math.reduce_std(image)
@@ -202,7 +204,6 @@ def create_dataset_from_split(
     print("y_train shape:", y_train.shape, "dtype:", y_train.dtype)
     print("y_valid shape:", y_valid.shape, "dtype:", y_valid.dtype)
     print("y_test shape:", y_test.shape, "dtype:", y_test.dtype)
-
 
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
     val_dataset = tf.data.Dataset.from_tensor_slices((X_valid, y_valid))
