@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from dataloader.celeba_spoof import get_data
 from src.models.silicone_mask import SiliconeMaskModel
-from inference import best_face
+from src.liveness_inference import best_face
 
 
 def get_metrics(y_true, y_pred):

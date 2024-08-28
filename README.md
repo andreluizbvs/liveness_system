@@ -53,3 +53,12 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     ```
 
 3. The script will output the accuracy, precision, recall, and F1-score of the model.
+
+
+## References
+
+A few projects with insightful content that were used here:
+
+- [CelebA-Spoof](https://github.com/ZhangYuanhan-AI/CelebA-Spoof) (Dataset and AENet)
+- [[CVPR2024 Workshop] Joint Physical-Digital Facial Attack Detection Via Simulating Spoofing Clues](https://github.com/Xianhua-He/cvpr2024-face-anti-spoofing-challenge) (Creative data augmentation)
+- https://www.kaggle.com/code/duchuy/face-anti-spoofing (Part of the dataloader for TF)

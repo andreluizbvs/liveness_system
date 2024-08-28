@@ -5,7 +5,7 @@ from tqdm import tqdm
 import cv2
 from deepface import DeepFace
 
-def generate_image_data_from_video(video_folder, output_folder, num_frames=50):
+def image_data_from_video_frames(video_folder, output_folder, num_frames=50):
     # Get a list of all video files in the folder
     video_files = [f for f in os.listdir(video_folder) if f.endswith('.mp4')]
 
@@ -40,11 +40,6 @@ def generate_image_data_from_video(video_folder, output_folder, num_frames=50):
         # Release the video file
         video.release()
 
-# video_folder = '../../data/archive/real/no_medical_mask/'
-# output_folder = '../../data/frames/real/'
-# video_folder = '../../data/archive/silicone/no_medical_mask/'
-# output_folder = '../../data/frames/silicone/'
-# generate_image_data_from_video(video_folder, output_folder)
 
 def get_most_confident_face(detections):
     most_confident_face = None
@@ -59,7 +54,7 @@ def get_most_confident_face(detections):
 
     return most_confident_face if max_confidence > 0.5 else None
 
-def generate_face_data_from_images(image_folder, output_folder):
+def face_data_from_images(image_folder, output_folder):
     # Walk through the image folder
     for root, _, files in os.walk(image_folder):
         for file in tqdm(files):
@@ -80,6 +75,15 @@ def generate_face_data_from_images(image_folder, output_folder):
                     cv2.imwrite(face_path, (face['face'] * 255).astype(int))
 
 
-image_folder = '../../data/frames'
-output_folder = '../../data/silicone_faces'
-generate_face_data_from_images(image_folder, output_folder)
+if __name__ == '__main__':
+    video_folder = '../../data/archive/real/no_medical_mask/'
+    output_folder = '../../data/frames/real/'
+    video_folder = '../../data/archive/silicone/no_medical_mask/'
+    output_folder = '../../data/frames/silicone/'
+    image_data_from_video_frames(video_folder, output_folder)
+    image_folder = '../../data/frames'
+    output_folder = '../../data/faces'
+    face_data_from_images(image_folder, output_folder)
+
+
+
