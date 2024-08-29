@@ -1,14 +1,14 @@
 import argparse
 
 import matplotlib.pyplot as plt
-import tensorflow as tf
 
 from dataloader.dataset import create_dataset, create_dataset_from_split
 from dataloader.celeba_spoof import get_data
 from src.models.silicone_mask import SiliconeMaskModel
 from src.models.depth import FaceDepthModel
-from models.adversarial_attack import AdversarialModel
-from utils.security import identify_vulnerabilities, mitigate_vulnerabilities
+from models.adversarial_attack import AdversarialAttack
+from utils.security import identify_vulnerabilities
+from utils.metrics import f1_score
 
 
 AMOUNT_LIVES = AMOUNT_SPOOFS = 5000
@@ -59,16 +59,10 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
                 plt.show()
                 input()
 
-    model.train(
-        train_dataset, val_dataset, epochs=epochs, patience=patience
-    )
+    model.train(train_dataset, val_dataset, epochs=epochs, patience=patience)
 
     results = model.evaluate(test_dataset)
-    f1 = (
-        2.0
-        * (results["precision"] * results["recall"])
-        / (results["precision"] + results["recall"])
-    )
+    f1 = f1_score(results["precision"], results["recall"])
     print(
         "Evaluation Metrics in the test dataset:\n"
         f"Accuracy: {round(results['accuracy'] * 100, 2)}%\n"
@@ -77,16 +71,50 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
         f"F1-Score: {round(f1 * 100, 2)}%\n"
     )
 
-    # # Test adversarial attacks
-    # adversarial_model = AdversarialModel(model)
-    # X_adv = adversarial_model.generate_adversarial_examples(X_val)
-    # y_adv_pred = adversarial_model.test_adversarial_examples(X_adv)
-    # adv_accuracy, adv_precision, adv_recall = evaluate_model(y_val, y_adv_pred)
-    # print(f'Adversarial Accuracy: {adv_accuracy}, Precision: {adv_precision}, Recall: {adv_recall}')
+    # Test adversarial attacks
+    adversarial_model = AdversarialAttack(model)
+    X_train_adv = adversarial_model.generate_adversarial_examples(X_train)
+    X_val_adv = adversarial_model.generate_adversarial_examples(X_valid)
+    X_test_adv = adversarial_model.generate_adversarial_examples(X_test)
+    train_dataset_adv, val_dataset_adv, test_dataset_adv = (
+        create_dataset_from_split(
+            X_train_adv,
+            X_val_adv,
+            X_test_adv,
+            y_train,
+            y_valid,
+            y_test,
+            image_size=(model.img_size, model.img_size),
+            combine_frame_and_face=combine,
+        )
+    )
+    results_pre_finetuning = model.evaluate(test_dataset_adv)
 
-    # # Security measures
-    # identify_vulnerabilities()
-    # mitigate_vulnerabilities()
+    # TODO: Security measures - identify the types of attack the model is most vulnerable
+    identify_vulnerabilities(model, test_dataset_adv)
+
+    # Mitigate vulnerabilities
+    # Fine-tune the model with the adversarial examples
+    coef = 2
+    model.train(
+        train_dataset_adv,
+        val_dataset_adv,
+        epochs=(epochs // coef),
+        patience=(patience // coef),
+    )
+    results_post_finetuning = model.evaluate(test_dataset_adv)
+
+    print(
+        "Evaluation metrics comparison before and after fine-tuning:\n"
+        f"Accuracy before: {round(results_pre_finetuning['accuracy'] * 100, 2)}% "
+        f"Accuracy after: {round(results_post_finetuning['accuracy'] * 100, 2)}%\n"
+        f"Precision before: {round(results_pre_finetuning['precision'] * 100, 2)}% "
+        f"Precision after: {round(results_post_finetuning['precision'] * 100, 2)}%\n"
+        f"Recall before: {round(results_pre_finetuning['recall'] * 100, 2)}% "
+        f"Recall after: {round(results_post_finetuning['recall'] * 100, 2)}%\n"
+        f"F1-Score before: {round(f1_score(results_pre_finetuning['precision'], results_pre_finetuning['recall']) * 100, 2)}% "
+        f"F1-Score after: {round(f1_score(results_post_finetuning['precision'], results_post_finetuning['recall']) * 100, 2)}%\n"
+    )
 
 
 if __name__ == "__main__":

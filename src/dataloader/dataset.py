@@ -1,4 +1,6 @@
-import random
+# The reson for some commented code in this file is at the function "augment"
+
+# import random
 
 import albumentations as A
 import numpy as np
@@ -16,7 +18,7 @@ from tensorflow.keras.layers import (
     GaussianNoise,
 )
 
-from src.models.adversarial_attack import AdversarialAttack
+# from src.models.adversarial_attack import AdversarialAttack
 
 # Constants
 SEED_VALUE = 42
@@ -41,8 +43,6 @@ def extract_face(image):
             return tf.expand_dims(
                 tf.convert_to_tensor(face, dtype=tf.float32), 0
             )
-
-        # print("No face detected.")
         return dummy_image
     except Exception as e:
         print(f"Error in extract_face: {e}")
@@ -70,9 +70,12 @@ def preprocess_data(
         ]
     )
     alb_augs = A.Compose([A.MotionBlur(p=0.1), A.CoarseDropout(p=0.1)])
-    adv_att = AdversarialAttack()
-    manipulate_img = adv_att.manipulate_image
-    attack_prob = 0.2
+
+    # The explanation of why this is commented out is right in the comment below
+    # (Actually, this is directly applied in the training script).
+    # adv_att = AdversarialAttack()
+    # manipulate_img = adv_att.manipulate_image
+    # attack_prob = 0.2
 
     def augment(image, label):
         # Applying traditional data augmentation
@@ -84,12 +87,13 @@ def preprocess_data(
         # To test the model against adversarial attacks, we can't apply 
         # adversarial attack data augmentation to the training set, only to 
         # the testset. After obtaining the evaluation metrics, we can add the 
-        # adversarial attack data augmentation to the training set and retrain 
-        # the model to see if the it became robust to adversarial attacks.
-        if random.random() < attack_prob:
-            image = tf.numpy_function(
-                lambda img: manipulate_img(img.numpy()), [image], tf.float32
-            )
+        # adv. attack data aug. to the training set and retrain the model to 
+        # see if the it became robust to them.
+        #
+        # if random.random() < attack_prob:
+        #     image = tf.numpy_function(
+        #         lambda img: manipulate_img(img.numpy()), [image], tf.float32
+        #     )
         image.set_shape(image_size + (3,))
         return image, label
 
@@ -107,12 +111,6 @@ def preprocess_data(
         print("Not combining frame and face...")
 
         def preprocess(image, label):
-            # # Z-score normalization + imagenet normalization + scaling to [-1, 1]
-            # image = (image - tf.reduce_mean(image)) / tf.math.reduce_std(image)
-            # mean = [0.485, 0.456, 0.406]
-            # std = [0.229, 0.224, 0.225]
-            # image = (image - mean) / std
-            # image = image * 2.0 - 1.0
             image /= 127.5
             image -= 1.0
             return image, label
@@ -180,12 +178,12 @@ def create_dataset(
 
 
 def create_dataset_from_split(
-    X_train,
-    X_valid,
-    X_test,
-    y_train,
-    y_valid,
-    y_test,
+    X_train = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    X_valid = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    X_test = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    y_train = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    y_valid = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    y_test = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
     image_size=IMG_SIZE,
     combine_frame_and_face=False,
 ):

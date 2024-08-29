@@ -97,6 +97,7 @@ class Bottleneck(nn.Module):
 # Auxiliary information Embedding Network (AENet) for face anti-spoofing
 # Based on ResNet-18
 
+
 class AENet(nn.Module):
     def __init__(
         self,
@@ -183,10 +184,14 @@ class AENet(nn.Module):
         reflect_map = self.reflect_final(x)
 
         depth_map = self.sigmoid(depth_map)
-        depth_map = self.upsample14(depth_map)
+        depth_map = self.upsample14(
+            depth_map
+        )  # Useful info for live prediction (screen photo, printed photo, etc.)
 
         reflect_map = self.sigmoid(reflect_map)
-        reflect_map = self.upsample14(reflect_map)
+        reflect_map = self.upsample14(
+            reflect_map
+        )  # Useful info for live prediction (3D mask, silicon mask, etc.)
 
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
@@ -208,14 +213,14 @@ class WrappedModel(tf.keras.Model):
         return self.model(inputs)
 
 
-
 class Predictor:
-
     def __init__(self):
         self.net = AENet()
 
         base_ckpt_path = "../ckpt/"
-        state_dict = torch.load(base_ckpt_path + "ckpt_iter.pth.tar")["state_dict"]
+        state_dict = torch.load(base_ckpt_path + "ckpt_iter.pth.tar")[
+            "state_dict"
+        ]
         new_state_dict = {}
         for k, v in state_dict.items():
             new_key = k.replace("module.", "")
@@ -224,13 +229,16 @@ class Predictor:
         self.net.load_state_dict(new_state_dict, strict=False)
         self.net.eval()
 
-
         self.new_width = self.new_height = 224
 
-        self.transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((self.new_width, self.new_height)),
-            torchvision.transforms.ToTensor(),
-            ])
+        self.transform = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.Resize(
+                    (self.new_width, self.new_height)
+                ),
+                torchvision.transforms.ToTensor(),
+            ]
+        )
 
         self.net.cuda()
         self.net.eval()
