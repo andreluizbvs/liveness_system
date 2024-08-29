@@ -4,6 +4,7 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
 
 ## Table of Contents
 
+- **[Comprehensive project report](./Report.md)**
 - [Installation](#installation)
 - [Usage](#usage)
 - [References](#references)
