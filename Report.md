@@ -32,6 +32,12 @@ This project implements a liveness detection system using machine learning and c
 - **Challenge**: A general solution to detect all main types of face spoofs
 - **Solution**: Decision made based on the output of multiple models trainined in different datasets and contexts. Almost as an emsemble.
 
+## Design choices
+
+- Since it is a very hard problem, I chose to use the outputs of multiple models in order to have a very well-informed live/spoof prediction. That slows down the output but, not too slow so that a person using it would be annoyed. The use of ONNX was to mitigate that waiting time, which was successful.
+- Data flow is very simple and easy to follow so new datasets can be easily added.
+- I thought about creating a well-organized and modularized project to enable future contributions, updates and general additions to it.
+
 ## Performance Metrics
 
 Classical classification metrics:
