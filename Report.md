@@ -41,6 +41,23 @@ Classical classification metrics:
 - **Precision**
 - **Recall**
 
+## Technologies
+
+Main Deep Learning frameworks and popular computer vision libraries, as well as other import tools:
+
+- TensorFlow (for performance [and I'm more used to it for the moment])
+- PyTorch (for fast prototyping, more common on research & scientific environments, as the problem needs)
+- DeepFace (face bounding box extraction for dataset creation, and of course for inference on "production-like" data)
+- InsightFace (for landmarks extraction for binary mask in adversarial attack generation)
+- OpenCV and Pillow (for general image operations)
+- Albumentations (for more rich data augmentation operations)
+- ONNX & ONNX Runtime(for high performance and real-time inference)
+- Other minor supporting libs
+- Of course, the Python language + Python Notebooks for really fast prototyping
+- Github Copilot for productivity boost
+- Nvidia GPU and CUDA for faster training, evaluation and inference times
+
+
 ## File Details
 
 ### Root Directory
@@ -59,7 +76,6 @@ Classical classification metrics:
 - **`adversarial_attack_data_aug.py`**: Contains multiple data augmentation techniques for adversarial attacks.
 - **`celeba_spoof.py`**: Handles the CelebA Spoof dataset.
 - **`dataset.py`**: General dataset handling utilities.
-
 
 
 ### `src/models/`
