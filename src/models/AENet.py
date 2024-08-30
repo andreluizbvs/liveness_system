@@ -214,13 +214,10 @@ class WrappedModel(tf.keras.Model):
 
 
 class Predictor:
-    def __init__(self):
+    def __init__(self, model_path="../ckpt/ckpt_iter.pth.tar"):
         self.net = AENet()
 
-        base_ckpt_path = "../ckpt/"
-        state_dict = torch.load(base_ckpt_path + "ckpt_iter.pth.tar")[
-            "state_dict"
-        ]
+        state_dict = torch.load(model_path)["state_dict"]
         new_state_dict = {}
         for k, v in state_dict.items():
             new_key = k.replace("module.", "")
