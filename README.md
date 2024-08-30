@@ -2,7 +2,7 @@
 
 Prototype of a liveness detection system to identify spoofs in videos from camera selfies. The project includes training, evaluation, inference and adversarial attack generation to test and improve the liveness detection model.
 
-![alt text](assets/image.png)
+![summary](assets/results.png)
 
 **>>> Please see the comprehensive project report for a complete explanation of this project (link below) <<<**
 
@@ -23,7 +23,7 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     cd liveness_system
     ```
 
-2. Create and activate the Conda environment:
+2. Create and activate the Conda environment (the first way, using the yml file, is recommended):
     ```sh
     conda env create -f environment.yml
     conda activate liveness
@@ -60,14 +60,15 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     python liveness_inference.py ../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/test/3613/spoof/541354.png
     ```
     You can pass images and videos paths here.
-    Obs.: You can put "`2>/dev/null`" at the end of the command to supress warnings. Remove if you wish to see it.
+    Obs.: You can put "`2>/dev/null`" at the end of the command to suppress warnings. Remove if you wish to see it.
 
 3. **[Recommended]** Experiment with the three provided jupyter notebooks. There are already some pre-loaded results and some sample input images:
     - `src/tools/adversarial_attack_manipulation.ipynb`
     - `src/tools/liveness_predict.ipynb`
     - `src/tools/liveness_output_analysis.ipynb`
     
-    These are quite intuitive. More info on them, please check out the [project report](./Report.md).
+    These are quite intuitive. More info on them, please check out the [project report](./Report.md). Here is a sample output of `liveness_output_analysis.ipynb`:
+    ![analysis](assets/analysis.png)
 
 4. To train one of the two models (`SiliconeMaskModel` or `FaceDepthModel`) run the train script to train and evaluate the liveness detection model. Here are two examples:
     ```sh
