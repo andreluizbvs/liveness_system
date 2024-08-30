@@ -22,7 +22,8 @@ Algorithms, System workflow, NN Architectures, Design choices, Metrics, Technolo
 - **Vulnerabilities and Countermeasures**:
     - Face manipulation, Face swapping, Deepfakes (these were address by the adversarial attack data augmentation in `src/dataloader/adversarial_attack_data_aug.py`
     - 3D silicone masks (this was address by silicone mask model in `src/models/silicone_mask.py`
-    - Printed photos of face images, Photos of screens (displays in general), Photo in 2D or 3D cardboard over background (this was addressed by the AENet in `src/model/AENet.py` and DeepFace anti-spoof lib in `src/liveness_inference.py`  
+    - Printed photos of face images, Photos of screens (displays in general), Photo in 2D or 3D cardboard over background (this was addressed by the AENet in `src/model/AENet.py` and DeepFace anti-spoof lib in `src/liveness_inference.py` 
+    - TODO: Background analysis (it is common that attackers use the same photo with swapped faces in an attempt to fool the liveness system); Whole image analysis (camera paremeters, unconventional variations in brightness, HSV color format analysis, etc.) 
 - **Mitigation**: Data augmentation (introduction of moire effect, facial artifact, color distortion, gradient noise)
 
 ## System workflow
