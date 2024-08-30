@@ -19,7 +19,10 @@ Algorithms, Architectures, Data Flow, Design choices, Metrics, Technologies, Fil
 - **Robustness Enhancement**: Model finetuning with adversarial attack examples to improve model robustness
 
 ### Security Measures
-- **Vulnerabilities**: To be identified.
+- **Vulnerabilities and Countermeasures**:
+    - Face manipulation, Face swapping, Deepfakes (these were address by the adversarial attack data augmentation in `src/dataloader/adversarial_attack_data_aug.py`
+    - 3D silicone masks (this was address by silicone mask model in `src/models/silicone_mask.py`
+    - Printed photos of face images, Photos of screens (displays in general), Photo in 2D or 3D cardboard over background (this was addressed by the AENet in `src/model/AENet.py` and DeepFace anti-spoof lib in `src/liveness_inference.py`  
 - **Mitigation**: Data augmentation (introduction of moire effect, facial artifact, color distortion, gradient noise)
 
 ## System Architecture
