@@ -27,6 +27,7 @@ Algorithms, System workflow, NN Architectures, Design choices, Metrics, Technolo
 
 ## System workflow
 
+```
 +-------------------+       +-------------------+
 |                   |       |                   |
 |  Data Collection  | ┌────►|  Model Evaluation |
@@ -54,7 +55,7 @@ Algorithms, System workflow, NN Architectures, Design choices, Metrics, Technolo
 |  Training         |─┘     |  Metrics          |
 |                   |       |                   |
 +-------------------+       +-------------------+
-
+```
 
 ## Network Architectures
 
