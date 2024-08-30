@@ -7,8 +7,8 @@ import torch.nn as nn
 import torchvision
 from PIL import Image
 
+IMG_SIZE = 224
 BN = nn.BatchNorm2d
-
 
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
@@ -226,7 +226,7 @@ class Predictor:
         self.net.load_state_dict(new_state_dict, strict=False)
         self.net.eval()
 
-        self.new_width = self.new_height = 224
+        self.new_width = self.new_height = IMG_SIZE
 
         self.transform = torchvision.transforms.Compose(
             [
@@ -241,8 +241,6 @@ class Predictor:
         self.net.eval()
 
     def preprocess_data(self, image):
-        if not isinstance(image, np.ndarray):
-            image = image.cpu().numpy()
         processed_data = Image.fromarray(image)
         processed_data = self.transform(processed_data)
         return processed_data

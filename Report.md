@@ -48,6 +48,15 @@ Classical classification metrics:
 - **Precision**
 - **Recall**
 
+Best achieved metrics in CelebA-Spoof dataset (by running `python evaluate.py` in `src/`):
+
+```
+Accuracy: 81.13%
+Precision: 73.98%
+Recall: 96.28%
+F1-Score: 83.67%
+```
+
 ## Technologies
 
 Main Deep Learning frameworks and popular computer vision libraries, as well as other import tools:

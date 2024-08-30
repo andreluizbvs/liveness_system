@@ -127,14 +127,14 @@ if __name__ == "__main__":
         help="Path to the data directory",
     )
     parser.add_argument(
-        "--model_path",
-        default=None,
-        help="Path to the model directory to resume training from",
-    )
-    parser.add_argument(
         "--model_name",
         default="silicone",
         help="Model name to train",
+    )
+    parser.add_argument(
+        "--model_path",
+        default=None,
+        help="Path to the model directory to resume training from",
     )
     parser.add_argument(
         "--epochs", default=150, help="Number of epochs to train the model"

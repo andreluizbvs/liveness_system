@@ -62,11 +62,15 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     
     They are quite intuitive. More info on them, please check out the [project report](./Report.md).
 
-4. To fine-tune it, one of the two models (SiliconeMaskModel or FaceDepthModel) run the train script to train and evaluate the liveness detection model:
+4. To train one of the two models (SiliconeMaskModel or FaceDepthModel) run the train script to train and evaluate the liveness detection model. Here are two examples:
     ```sh
-    python train.py
+    python train.py --data_path ../data/silicone_faces --model_name silicone
     ```
-    It will output the accuracy, precision, recall, and F1-score of the model.
+    or
+    ```sh
+    python train.py --data_path ../data/celebA-spoof --model_name depth
+    ```
+    Both will output the accuracy, precision, recall, and F1-score of the model. Also, it will automatically fine-tune the chosen model after its training session on adversarial attack augmented data. The data will be genrerated automatically and passed to the model. In the end, a comparison between the model's performance with and without fine-tuning against the adversarial attack data will be shown.
 
 5. To evaluate the models in the CelebA-Spoof Test set, simply run the following:
     ```sh

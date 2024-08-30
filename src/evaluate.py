@@ -71,13 +71,13 @@ def evaluate_celeba_spoof_dataset_silicone(X_test, y_test):
     y_pred = []
     for img in tqdm(X_test):
         img = SiliconeMaskModel.preprocess(img)
-        y = model.predict(img)
-        y = (y_pred > 0.5).astype(int)
+        y = model.predict(img)[0][0]
+        y = (y > 0.5).astype(int)
         y_pred.append(y)
     
     y_pred = np.array(y_pred)
     accuracy, precision, recall, f1 = get_metrics(y_test, y_pred)
-    show_metrics("AENet", "CelebA-Spoof", accuracy, precision, recall, f1)
+    show_metrics("Silicone", "CelebA-Spoof", accuracy, precision, recall, f1)
 
 
 def evaluate_celeba_spoof_dataset_deepface(X_test, y_test):
@@ -120,8 +120,6 @@ def evaluate_celeba_spoof_dataset_aenet(X_test, y_test):
         y_pred.append(y)
 
     y_pred = np.array(y_pred)
-    print(y_pred)
-    print(y_test)
     accuracy, precision, recall, f1 = get_metrics(y_test, y_pred)
     show_metrics("AENet", "CelebA-Spoof", accuracy, precision, recall, f1)
 
@@ -131,7 +129,8 @@ def main():
     evaluate_celeba_spoof_dataset_aenet(X_test, y_test)
     evaluate_celeba_spoof_dataset_silicone(X_test, y_test)
     evaluate_celeba_spoof_dataset_deepface(X_test, y_test)
-    evaluate_celeba_spoof_dataset_depthcls(X_test, y_test)
+    # Some weird error related to weight loading
+    # evaluate_celeba_spoof_dataset_depthcls(X_test, y_test)
 
 
 if __name__ == "__main__":

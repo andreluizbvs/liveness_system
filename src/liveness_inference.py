@@ -54,9 +54,13 @@ def process_frame_deepface(frame):
 
 
 def process_frame_aenet(frame, aenet_pred):
-    in_face = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
-    in_face = (in_face * 255).astype(np.uint8)
-    return aenet_pred.predict([in_face])[0][1]
+    if not isinstance(frame, np.ndarray):
+        frame = frame.numpy()
+    if frame.shape[0] == 3:
+        frame = np.transpose(frame, (1, 2, 0))
+    if not isinstance(frame[0][0][0], np.uint8):
+        frame = (frame * 255).astype(np.uint8)
+    return aenet_pred.predict([frame])[0][1]
 
 
 def process_frame_all(frame, silicon_mask_model, aenet_pred, is_keras):
