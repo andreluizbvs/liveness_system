@@ -5,7 +5,7 @@ This project implements a liveness detection system using machine learning and c
 
 # Methodologies
 
-Algorithms, Architectures, Data Flow, Design choices, Metrics, Technologies, Files' details, Main challenges and solutions, Conclusions and References.
+Algorithms, System workflow, NN Architectures, Design choices, Metrics, Technologies, Files' details, Main challenges and solutions, Conclusions and References.
 
 ## Algorithms
 
@@ -25,13 +25,46 @@ Algorithms, Architectures, Data Flow, Design choices, Metrics, Technologies, Fil
     - Printed photos of face images, Photos of screens (displays in general), Photo in 2D or 3D cardboard over background (this was addressed by the AENet in `src/model/AENet.py` and DeepFace anti-spoof lib in `src/liveness_inference.py`  
 - **Mitigation**: Data augmentation (introduction of moire effect, facial artifact, color distortion, gradient noise)
 
-## System Architecture
+## System workflow
 
-![Architecture]()
++-------------------+       +-------------------+
+|                   |       |                   |
+|  Data Collection  | ┌────►|  Model Evaluation |
+|                   | │     |                   |
++-------------------+ │     +-------------------+
+         |            │              |           
+         v            │              v           
++-------------------+ │     +-------------------+
+|                   | │     | Adversarial Attack|
+| Data Preprocessing| │     | Data Augmentation |
+|                   | │     |                   |
++-------------------+ │     +-------------------+
+         |            │              |           
+         v            │              v           
++-------------------+ │     +-------------------+
+|  Traditional      | │     |                   |
+|  Data Augmentation| │     |  Model finetuning |
+|                   | │     |  w/ new aug. data |
++-------------------+ │     +-------------------+
+         |            │              |           
+         v            │              v           
++-------------------+ │     +-------------------+
+|                   | │     |                   |
+|  Model            | │     |  Re-compute       |
+|  Training         |─┘     |  Metrics          |
+|                   |       |                   |
++-------------------+       +-------------------+
 
-## Data Flow Diagram
 
-![Data Flow](data_flow_diagram.png)
+## Network Architectures
+
+Here are some images showing the proposed (SMNet) and used (AENet) neural networks:
+
+Silicone Mask Model (SMNet), a simple CNN-based binary classification method:
+![silicone](assets/silicone_mask_model.png)
+
+AENet:
+![aenet](assets/aenet.png)
 
 
 ## Design choices
