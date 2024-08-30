@@ -4,7 +4,7 @@ from insightface.app import FaceAnalysis
 
 from src.dataloader.adversarial_attack_data_aug import add_moire_noise, digital_augment
 
-IMG_SIZE = 640
+IMG_SIZE =  224
 
 app = FaceAnalysis()
 
@@ -29,9 +29,10 @@ class AdversarialAttack:
         if isinstance(image, str):
             image = cv2.imread(image)
         image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+        image = (image * 255).astype(np.uint8)
         faces = app.get(image)
         if len(faces) == 0:
-            return None
+            return np.zeros((IMG_SIZE, IMG_SIZE, 3))
 
         # Create a binary face mask from the landmarks
         landmarks = faces[0]["landmark_2d_106"].astype(np.int32)
@@ -43,16 +44,19 @@ class AdversarialAttack:
         # Add moire noise to the augmented image
         self.img_moire = add_moire_noise(image)
 
-        return add_moire_noise(self.img_digital_aug)
+        manipulated_img = add_moire_noise(self.img_digital_aug)
+
+        return cv2.resize(manipulated_img, (IMG_SIZE, IMG_SIZE))
 
     def generate_adversarial_examples(self, regular_images):
+        self.adversarial_examples = []
         for regular_image in regular_images:
             image_aug = self.manipulate_image(regular_image)
             if image_aug is None:
                 continue
             self.adversarial_examples.append(image_aug)
 
-        return np.array(self.adversarial_examples)
+        return np.stack(self.adversarial_examples, axis=0)
 
     def test_adversarial_examples(self, images_to_manipulate: list = []):
         if self.liveness_model is None:

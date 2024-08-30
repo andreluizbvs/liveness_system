@@ -69,7 +69,7 @@ def preprocess_data(
             GaussianNoise(0.1),
         ]
     )
-    alb_augs = A.Compose([A.MotionBlur(p=0.1), A.CoarseDropout(p=0.1)])
+    # alb_augs = A.Compose([A.MotionBlur(p=0.1), A.CoarseDropout(p=0.1)])
 
     # The explanation of why this is commented out is right in the comment below
     # (Actually, this is directly applied in the training script).
@@ -80,9 +80,9 @@ def preprocess_data(
     def augment(image, label):
         # Applying traditional data augmentation
         image = data_augmentation(image, training=True)
-        image = tf.numpy_function(
-            lambda img: alb_augs(image=img)["image"], [image], tf.float32
-        )
+        # image = tf.numpy_function(
+        #     lambda img: alb_augs(image=img)["image"], [image], tf.float32
+        # )
         # ****** Applying anti-spoof-focused data augmentation ******
         # To test the model against adversarial attacks, we can't apply 
         # adversarial attack data augmentation to the training set, only to 
@@ -94,7 +94,7 @@ def preprocess_data(
         #     image = tf.numpy_function(
         #         lambda img: manipulate_img(img.numpy()), [image], tf.float32
         #     )
-        image.set_shape(image_size + (3,))
+        # image.set_shape(image_size + (3,))
         return image, label
 
     train_dataset = train_dataset.map(augment)
@@ -113,6 +113,8 @@ def preprocess_data(
         def preprocess(image, label):
             image /= 127.5
             image -= 1.0
+            if image.shape[0] != image_size[0]:
+                image = image[0]
             return image, label
 
     train_dataset = train_dataset.map(preprocess)
@@ -178,12 +180,12 @@ def create_dataset(
 
 
 def create_dataset_from_split(
-    X_train = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
-    X_valid = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
-    X_test = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
-    y_train = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
-    y_valid = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
-    y_test = tf.zeros([1, 224, 224, 3], dtype=tf.float32),
+    X_train,
+    X_valid,
+    X_test,
+    y_train,
+    y_valid,
+    y_test,
     image_size=IMG_SIZE,
     combine_frame_and_face=False,
 ):

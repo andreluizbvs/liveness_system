@@ -63,9 +63,11 @@ Algorithms, System workflow, NN Architectures, Design choices, Metrics, Technolo
 Here are some images showing the proposed (SMNet) and used (AENet) neural networks:
 
 Silicone Mask Model (SMNet), a simple CNN-based binary classification method:
+
 ![silicone](assets/silicone_mask_model.png)
 
 AENet:
+
 ![aenet](assets/aenet.png)
 
 

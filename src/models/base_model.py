@@ -57,7 +57,6 @@ class LossPlotterCallback(Callback):
         plt.legend()
         plt.title("Final Training and Validation Loss Plot")
         plt.savefig("final_loss_plot.png")
-        plt.show()
 
 
 class BaseModel(ABC):

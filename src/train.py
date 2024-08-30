@@ -71,11 +71,27 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
         f"F1-Score: {round(f1 * 100, 2)}%\n"
     )
 
+    if "silicone_video_frames" not in data_path:
+        print("Adversarial attacks are only available for the silicone video frame datase.")
+        print("Please run: python train.py --data_path ../data/silicone_video_frames --model_name silicone")
+        print("Exiting...")
+        exit(1)
+
     # Test adversarial attacks
     adversarial_model = AdversarialAttack(model)
+
+    train_dataset = train_dataset.unbatch()
+    val_dataset = val_dataset.unbatch()
+    test_dataset = test_dataset.unbatch()
+
+    X_train, y_train = zip(*train_dataset.as_numpy_iterator())
+    X_valid, y_valid = zip(*val_dataset.as_numpy_iterator())
+    X_test, y_test = zip(*test_dataset.as_numpy_iterator())
+
     X_train_adv = adversarial_model.generate_adversarial_examples(X_train)
     X_val_adv = adversarial_model.generate_adversarial_examples(X_valid)
     X_test_adv = adversarial_model.generate_adversarial_examples(X_test)
+
     train_dataset_adv, val_dataset_adv, test_dataset_adv = (
         create_dataset_from_split(
             X_train_adv,
