@@ -32,9 +32,9 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
 
     ```sh
     conda create -n liveness python=3.12
+    conda activate liveness
     pip install -r requirements.txt
     conda install -c conda-forge libstdcxx-ng
-    conda activate liveness
     ```
 
 ## Usage
