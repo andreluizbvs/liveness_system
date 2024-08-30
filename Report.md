@@ -1,10 +1,13 @@
 # Report
 
-## Project Overview
 
 This project implements a liveness detection system using machine learning and computer vision to distinguish between live individuals and non-live entities (spoofs). The project includes training, evaluation, inference, and adversarial attack generation to test and improve the liveness detection model.
 
-## Methodologies
+# Methodologies
+
+Algorithms, Architectures, Data Flow, Design choices, Metrics, Technologies, Files' details, Main challenges and solutions, Conclusions and References.
+
+## Algorithms
 
 ### Liveness Detection Algorithm
 - **Model Selection**: All are CNN-based. Facial depth estimation, embedding extraction (ResNet) for mask detection, and AENet (for reflection estimation and a binary general classification of live/spoof images)
@@ -27,18 +30,16 @@ This project implements a liveness detection system using machine learning and c
 
 ![Data Flow](data_flow_diagram.png)
 
-## Challenges and Solutions
-
-- **Challenge**: A general solution to detect all main types of face spoofs
-- **Solution**: Decision made based on the output of multiple models trainined in different datasets and contexts. Almost as an emsemble.
 
 ## Design choices
 
-- Since it is a very hard problem, I chose to use the outputs of multiple models in order to have a very well-informed live/spoof prediction. That slows down the output but, not too slow so that a person using it would be annoyed. The use of ONNX was to mitigate that waiting time, which was successful.
-- Data flow is very simple and easy to follow so new datasets can be easily added.
+- Since it is a hard problem, I chose to use the outputs of multiple models in order to have a very well-informed live/spoof prediction. Almost as an classification emsemble.
+- Having multiple model may increase the model performance on detecting spoofs butslow down the output. However it should not be too slow so that a person using it would be annoyed. 
+    - For that, I used the ONNX format to mitigate that waiting time (which was successful). It is running in real-time.
+- Data flow is simple and easy to follow so new datasets can be easily added.
 - I thought about creating a well-organized and modularized project to enable future contributions, updates and general additions to it.
 
-## Performance Metrics
+## Performance metrics
 
 Classical classification metrics:
 
@@ -64,7 +65,7 @@ Main Deep Learning frameworks and popular computer vision libraries, as well as 
 - Nvidia GPU and CUDA for faster training, evaluation and inference times
 
 
-## File Details
+## Files' details
 
 ### Root Directory
 - **environment.yml**: Conda environment configuration file.
@@ -72,9 +73,9 @@ Main Deep Learning frameworks and popular computer vision libraries, as well as 
 - **setup.py**: Script for setting up the project package.
 
 ### `src/`
-- **`adv_attack_inference.py`**: Script for running adversarial attack inference.
+- **`adv_attack_inference.py`**: Script for running adversarial attack inference (it is recommended to use the jupyter notebook in `src/tools/adversarial_attack_manipulation.ipynb`).
 - **`evaluate.py`**: Script for evaluating the all models.
-- **`liveness_inference.py`**: Script for running liveness detection inference on an image or video file.
+- **`liveness_inference.py`**: Script for running liveness detection inference on an image or video file (it is recommended to use the jupyter notebook in `src/tools/liveness_predict.ipynb`).
 - **`train.py`**: Script for training the liveness detection models (FaceDepth or SiliconeMask). Futurely, it is intended that AENet also could be fine-tuned.
 
 ### `src/dataloader/`
@@ -108,6 +109,45 @@ Main Deep Learning frameworks and popular computer vision libraries, as well as 
 - `security.py`: A future implementation of a function that identifies which types of adversarial attacks the model is most vulnerable by providing it annotations of each type of attack in a given dataset.
 
 
-## Conclusion
+## Main challenges and solutions
+1. Data Collection and Preparation:
 
-The project attempts to tackle the liveness and adversarial attack problems through multiple angles. Its structure was thought and organized to facilitate future additions and upgrades, such as new models, new datasets, and model optimizations for real-time perfomance.
+Gathering a diverse and representative dataset of real and spoofed videos: CelebA-Spoof is a great dataset but it lacks some spoof types such as face swaping and 3D silicone masks. That why I needed to use the silicone mask dataset.
+
+Preprocessing the data to make it suitable for training and evaluation: The silicone dataset did not have many videos, so the dataset was produced from many of their frames. Also, which type augmentations to use.
+
+2. Model Training and Optimization:
+
+Selecting and fine-tuning the appropriate machine learning models for depth estimation-based classification.
+
+Balancing the trade-off between model accuracy and computational efficiency: Here the models help since they already were somewhat light. ONNX solved it.
+
+3. Adversarial Attack Generation:
+
+Implementing and optimizing the adversarial attack generation process.
+
+Ensuring that the adversarial examples are realistic and challenging for the model. Some augmentations only made sense in theory.
+
+4. System Integration and Testing:
+
+Integrating various components of the system, including data preprocessing, model inference, and adversarial attack generation.
+
+The whole software engineering behind this project, to make it clean, readable, efficient and robust, respecting the best practices in Python and Machine Learnign development.
+
+5. Documentation:
+
+Creating comprehensive documentation about the project (meta-difficulty 😅).
+
+## Conclusions
+
+The project attempts to tackle the liveness and adversarial attack complex problems through multiple angles. Its structure was thought and organized to facilitate future additions and upgrades, such as new models, new datasets, and model optimizations for real-time perfomance. 
+
+## References
+
+A few inspiring projects with insightful content that adapted here:
+
+- [CelebA-Spoof](https://github.com/ZhangYuanhan-AI/CelebA-Spoof) (Dataset and AENet)
+- [CelebA-Spoof paper](https://arxiv.org/pdf/2007.12342) (Theoretical concepts and explanations)
+- [[CVPR2024 Workshop] Joint Physical-Digital Facial Attack Detection Via Simulating Spoofing Clues](https://github.com/Xianhua-He/cvpr2024-face-anti-spoofing-challenge) (Creative data augmentation)
+- https://www.kaggle.com/code/duchuy/face-anti-spoofing (Part of the dataloader for TF)
+- https://www.kaggle.com/datasets/trainingdatapro/silicone-masks-biometric-attacks/data (For the silicone mask dataset)

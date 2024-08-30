@@ -2,13 +2,14 @@
 
 Prototype of a liveness detection system to identify spoofs in videos from camera selfies. The project includes training, evaluation, inference and adversarial attack generation to test and improve the liveness detection model.
 
+**>>> Please see the comprehensive project report for a complete explanation of this project (link below) <<<**
+
 ## Table of Contents
 
 - **[Comprehensive project report](./Report.md)**
 - [Installation](#installation)
 - [Usage](#usage)
-- [References](#references)
-- [License](./LICENSE)
+- [Disclaimer](#disclaimer)
 
 ## Installation
 
@@ -36,7 +37,13 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
 
 ## Usage
 
-1. Prepare model weights and datasets. Place datasets in the `data/` folder, and the weights in the `ckpt/` folder, both at this project's root directory
+1. Prepare model weights and datasets. Place datasets in the `data/` folder, and the weights in the `ckpt/` folder, both at this project's root directory:
+
+    - [Required] Download the datasets [here](https://drive.google.com/file/d/1YhO77mX-lrsHrylAGhwAJr86ZX4CD4IG/view?usp=sharing). Extract the zip contents in the `data/` folder. 
+    
+        Obs.: It is **not necessary** getting the whole CelebA-Spoof dataset. It is very big (77 GB), but if you need it, go [here](https://www.kaggle.com/datasets/attentionlayer241/celeba-spoof-for-face-antispoofing);
+    
+    - [Required] Download the pretrained models [here](https://drive.google.com/file/d/1sQFPC9IyQFFDmKX28_uD4mgN00dtZSiL/view?usp=sharing).
 
 2. Run the inference scripts to see the system working on an image or a video:
     ```sh
@@ -56,11 +63,6 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     It will output the accuracy, precision, recall, and F1-score of the model.
 
 
-## References
+## Disclaimer
 
-A few inspiring projects with insightful content that adapted here:
-
-- [CelebA-Spoof](https://github.com/ZhangYuanhan-AI/CelebA-Spoof) (Dataset and AENet)
-- [[CVPR2024 Workshop] Joint Physical-Digital Facial Attack Detection Via Simulating Spoofing Clues](https://github.com/Xianhua-He/cvpr2024-face-anti-spoofing-challenge) (Creative data augmentation)
-- https://www.kaggle.com/code/duchuy/face-anti-spoofing (Part of the dataloader for TF)
-- https://www.kaggle.com/datasets/trainingdatapro/silicone-masks-biometric-attacks/data (For the silicone mask dataset)
+This project is provided "as is" without any warranties of any kind, either express or implied. Use at your own risk.
