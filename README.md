@@ -47,15 +47,20 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     
     - [Required] Download the pretrained models [here](https://drive.google.com/file/d/1sQFPC9IyQFFDmKX28_uD4mgN00dtZSiL/view?usp=sharing).
 
+2. Run the setup script:
+    ```sh
+    pip install -e .
+    ```
+
 2. Run the liveness inference script to see the system working on an image or a video. See an example below:
     ```sh
     cd src/
     ```
     ```sh
-    python liveness_inference.py ../data/celebA-spoof_samples/CelebA_Spoof_/CelebA_Spoof/Data/test/3613/spoof/541354.png 2>/dev/null
+    python liveness_inference.py ../data/celebA-spoof/CelebA_Spoof_/CelebA_Spoof/Data/test/3613/spoof/541354.png
     ```
     You can pass images and videos paths here.
-    Obs.: The "`2>/dev/null`" is just to supress warnings. Remove if you wish to see it.
+    Obs.: You can put "`2>/dev/null`" at the end of the command to supress warnings. Remove if you wish to see it.
 
 3. **[Recommended]** Experiment with the three provided jupyter notebooks. There are already some pre-loaded results and some sample input images:
     - `src/tools/adversarial_attack_manipulation.ipynb`

@@ -7,6 +7,7 @@ import torch.nn as nn
 import torchvision
 from PIL import Image
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 224
 BN = nn.BatchNorm2d
 
@@ -196,6 +197,8 @@ class AENet(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
 
+        # The unused outputs here are the auxiliary information of the face anti-spoofing task
+        # These are returned in the 'ckpt/aenet_complete_output.onnx' model
         x_live_attribute = self.fc_live_attribute(x)
         x_attack = self.fc_attack(x)
         x_light = self.fc_light(x)
@@ -217,7 +220,7 @@ class Predictor:
     def __init__(self, model_path="../ckpt/ckpt_iter.pth.tar"):
         self.net = AENet()
 
-        state_dict = torch.load(model_path)["state_dict"]
+        state_dict = torch.load(model_path, map_location=device)["state_dict"]
         new_state_dict = {}
         for k, v in state_dict.items():
             new_key = k.replace("module.", "")
@@ -237,7 +240,6 @@ class Predictor:
             ]
         )
 
-        self.net.cuda()
         self.net.eval()
 
     def preprocess_data(self, image):
@@ -250,7 +252,7 @@ class Predictor:
     def eval_image(self, image):
         data = torch.stack(image, dim=0)
         channel = 3
-        input_var = data.view(-1, channel, data.size(2), data.size(3)).cuda()
+        input_var = data.view(-1, channel, data.size(2), data.size(3)).to(device)
         with torch.no_grad():
             rst = self.net(input_var).detach()
         return rst.reshape(-1, 2)

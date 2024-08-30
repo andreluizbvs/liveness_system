@@ -143,7 +143,6 @@ dependencies:
       - onnx-tf==1.6.0
       - onnx2tf==1.25.7
       - onnxruntime-gpu==1.19.0
-      - onnxsim==0.4.36
       - opencv-python==4.10.0.84
       - opt-einsum==3.3.0
       - optree==0.12.1

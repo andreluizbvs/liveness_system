@@ -71,7 +71,7 @@ Main Deep Learning frameworks and popular computer vision libraries, as well as 
 - Other minor supporting libs
 - Of course, the Python language + Python Notebooks for really fast prototyping
 - Github Copilot for productivity boost
-- Nvidia GPU and CUDA for faster training, evaluation and inference times
+- Nvidia GPU and CUDA for faster training, evaluation and inference times (CPU execution is also available)
 
 
 ## Files' details
