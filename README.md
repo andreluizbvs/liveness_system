@@ -2,7 +2,7 @@
 
 Prototype of a liveness detection system to identify spoofs in videos from camera selfies. The project includes training, evaluation, inference and adversarial attack generation to test and improve the liveness detection model.
 
-![alt text](image.png)
+![alt text](assets/image.png)
 
 **>>> Please see the comprehensive project report for a complete explanation of this project (link below) <<<**
 
