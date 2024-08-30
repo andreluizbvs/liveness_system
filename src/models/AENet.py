@@ -241,6 +241,8 @@ class Predictor:
         self.net.eval()
 
     def preprocess_data(self, image):
+        if not isinstance(image, np.ndarray):
+            image = image.cpu().numpy()
         processed_data = Image.fromarray(image)
         processed_data = self.transform(processed_data)
         return processed_data

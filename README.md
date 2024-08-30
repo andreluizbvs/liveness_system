@@ -45,22 +45,33 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     
     - [Required] Download the pretrained models [here](https://drive.google.com/file/d/1sQFPC9IyQFFDmKX28_uD4mgN00dtZSiL/view?usp=sharing).
 
-2. Run the inference scripts to see the system working on an image or a video:
+2. Run the liveness inference script to see the system working on an image or a video. See an example below:
     ```sh
     cd src/
     ```
     ```sh
-    python liveness_inference.py 
+    python liveness_inference.py ../data/celebA-spoof_samples/CelebA_Spoof_/CelebA_Spoof/Data/test/3613/spoof/541354.png 2>/dev/null
     ```
-    ```sh
-    python adv_attack_inference.py
-    ```
+    You can pass images and videos paths here.
+    Obs.: The "`2>/dev/null`" is just to supress warnings. Remove if you wish to see it.
 
-3. To fine-tune it, run the train script to train and evaluate the liveness detection model:
+3. **[Recommended]** Experiment with the three provided jupyter notebooks. There are already some pre-loaded results and some sample input images:
+    - `src/tools/adversarial_attack_manipulation.ipynb`
+    - `src/tools/liveness_predict.ipynb`
+    - `src/tools/liveness_output_analysis.ipynb`
+    
+    They are quite intuitive. More info on them, please check out the [project report](./Report.md).
+
+4. To fine-tune it, one of the two models (SiliconeMaskModel or FaceDepthModel) run the train script to train and evaluate the liveness detection model:
     ```sh
     python train.py
     ```
     It will output the accuracy, precision, recall, and F1-score of the model.
+
+5. To evaluate the models in the CelebA-Spoof Test set, simply run the following:
+    ```sh
+    python evaluate.py
+    ```
 
 
 ## Disclaimer

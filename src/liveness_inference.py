@@ -9,7 +9,7 @@ from src.models.silicone_mask import SiliconeMaskModel
 from src.models.AENet import Predictor
 
 
-SPOOF_TH = 0.99
+SPOOF_TH = 0.5
 SILICONE_TH = 0.5
 IMG_SIZE = 224
 
@@ -28,7 +28,7 @@ def best_face(faces):
         return None
 
 
-def process_frame(frame, silicon_mask_model, is_keras):
+def process_frame_silicone(frame, silicon_mask_model, is_keras):
     preproc_img = SiliconeMaskModel.preprocess(frame)
     if is_keras:
         prediction = silicon_mask_model.predict(preproc_img)
@@ -40,23 +40,57 @@ def process_frame(frame, silicon_mask_model, is_keras):
     return get_scalar(prediction)
 
 
-def main(media_path, model_path):
+def process_frame_deepface(frame):
+    faces = DeepFace.extract_faces(
+        frame,
+        detector_backend="yolov8",
+        enforce_detection=False,
+        anti_spoofing=True,
+    )
 
+    face = best_face(faces)
+    del faces
+    return face
+
+
+def process_frame_aenet(frame, aenet_pred):
+    in_face = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
+    in_face = (in_face * 255).astype(np.uint8)
+    return aenet_pred.predict([in_face])[0][1]
+
+
+def process_frame_all(frame, silicon_mask_model, aenet_pred, is_keras):
+    silicon_pred = process_frame_silicone(frame, silicon_mask_model, is_keras)
+    face = process_frame_deepface(frame)
+    prob = process_frame_aenet(face["face"], aenet_pred)
+
+    print(
+        f"DeepFace FAS predictor. Is it spoof? {face['is_real']}. Score: {face['antispoof_score']}. 1 = Spoof, 0 = Live."
+    )
+    print(
+        f"Is subject wearing silicon mask? {silicon_pred > SILICONE_TH}. Score: {silicon_pred}. 1 = Mask, 0 = No Mask."
+    )
+    print(f"AENet FAS predictor. Is it spoof? {prob > SPOOF_TH}. Score: {prob}. 1 = Spoof, 0 = Live.")
+    print("\n")
+
+
+def main(media_path, model_path):
     is_keras = model_path.endswith(".keras")
 
     silicon_mask_model = (
         SiliconeMaskModel(model_path)
         if is_keras
         else ort.InferenceSession(
-            model_path, providers=["CUDAExecutionProvider", 
-                                   "CPUExecutionProvider"]
+            model_path,
+            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
         )
     )
 
     aenet_pred = Predictor()
 
     if media_path.endswith((".jpg", ".jpeg", ".png", ".bmp", ".tiff")):
-        return process_frame(media_path, silicon_mask_model, is_keras)
+        process_frame_all(media_path, silicon_mask_model, aenet_pred, is_keras)
+        return
 
     cap = cv2.VideoCapture(media_path)
 
@@ -65,31 +99,12 @@ def main(media_path, model_path):
         if not ret:
             break
 
-        silicon_pred = process_frame(frame, silicon_mask_model, is_keras)
+        process_frame_all(frame, silicon_mask_model, aenet_pred, is_keras)
 
-        faces = DeepFace.extract_faces(
-            frame, 
-            detector_backend="yolov8", 
-            enforce_detection=False,
-            anti_spoofing=True
-        )
-
-        face = best_face(faces)
-        del faces
-
-        in_face = cv2.resize(face['face'], (IMG_SIZE, IMG_SIZE))
-        in_face = (in_face * 255).astype(np.uint8)
-        prob = aenet_pred.predict([in_face])[0][1]
-
-        print(f"DeepFace FAS predictor:{face['is_real']}. Score: {face['antispoof_score']}")
-        print(f"Non-silicone: {silicon_pred}") if silicon_pred < SILICONE_TH else print(f"Silicone mask {silicon_pred}!!!")
-        print(f"[AENet] Live: {prob}") if prob < SPOOF_TH else print(f"[AENet] Spoof: {prob}")
-        print('\n')
-
-        cv2.imshow('Frame', frame)
+        cv2.imshow("Frame", frame)
 
         # Exit the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     # Release the video capture object and close the window
@@ -98,7 +113,6 @@ def main(media_path, model_path):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         description="Run liveness detection on an image or video."
     )

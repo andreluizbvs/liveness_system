@@ -21,7 +21,7 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
     if model_name == "silicone":
         model = SiliconeMaskModel(model_path, combine_frame_and_face=combine)
     elif model_name == "depth":
-        model = FaceDepthModel()
+        model = FaceDepthModel(model_path)
     else:
         raise ValueError("Model name not recognized")
 
@@ -119,7 +119,7 @@ def main(data_path, model_path, model_name, epochs, patience, combine):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Train and evaluate the silicone mask classification model."
+        description="Train and evaluate the silicone mask classification model or the face depth-based classification model."
     )
     parser.add_argument(
         "--data_path",
