@@ -43,7 +43,7 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
 
     - [Required] Download the datasets [here](https://drive.google.com/file/d/1YhO77mX-lrsHrylAGhwAJr86ZX4CD4IG/view?usp=sharing). Extract the zip contents in the `data/` folder. 
     
-        Obs.: It is **not necessary** getting the whole CelebA-Spoof dataset. It is very big (77 GB), but if you need it, go [here](https://www.kaggle.com/datasets/attentionlayer241/celeba-spoof-for-face-antispoofing);
+        Obs.: It is **not necessary** to get the whole CelebA-Spoof dataset. It is very big (77 GB), but if you need it, go [here](https://www.kaggle.com/datasets/attentionlayer241/celeba-spoof-for-face-antispoofing);
     
     - [Required] Download the pretrained models [here](https://drive.google.com/file/d/1sQFPC9IyQFFDmKX28_uD4mgN00dtZSiL/view?usp=sharing).
 
@@ -62,9 +62,9 @@ Prototype of a liveness detection system to identify spoofs in videos from camer
     - `src/tools/liveness_predict.ipynb`
     - `src/tools/liveness_output_analysis.ipynb`
     
-    They are quite intuitive. More info on them, please check out the [project report](./Report.md).
+    These are quite intuitive. More info on them, please check out the [project report](./Report.md).
 
-4. To train one of the two models (SiliconeMaskModel or FaceDepthModel) run the train script to train and evaluate the liveness detection model. Here are two examples:
+4. To train one of the two models (`SiliconeMaskModel` or `FaceDepthModel`) run the train script to train and evaluate the liveness detection model. Here are two examples:
     ```sh
     python train.py --data_path ../data/silicone_faces --model_name silicone
     ```
