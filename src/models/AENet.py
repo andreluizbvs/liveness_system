@@ -218,7 +218,7 @@ class WrappedModel(tf.keras.Model):
 
 class Predictor:
     def __init__(self, model_path="../ckpt/ckpt_iter.pth.tar"):
-        self.net = AENet()
+        self.net = AENet().to(device)
 
         state_dict = torch.load(model_path, map_location=device)["state_dict"]
         new_state_dict = {}

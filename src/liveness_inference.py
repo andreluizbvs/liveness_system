@@ -12,6 +12,7 @@ from src.models.AENet import Predictor
 SPOOF_TH = 0.5
 SILICONE_TH = 0.5
 IMG_SIZE = 224
+ROUND_DIGITS = 4
 
 
 def get_scalar(nested_list):
@@ -54,27 +55,30 @@ def process_frame_deepface(frame):
 
 
 def process_frame_aenet(frame, aenet_pred):
-    if not isinstance(frame, np.ndarray):
-        frame = frame.numpy()
     if frame.shape[0] == 3:
         frame = np.transpose(frame, (1, 2, 0))
-    if not isinstance(frame[0][0][0], np.uint8):
+    if not isinstance(frame.dtype, np.uint8):
         frame = (frame * 255).astype(np.uint8)
     return aenet_pred.predict([frame])[0][1]
 
 
-def process_frame_all(frame, silicon_mask_model, aenet_pred, is_keras):
-    silicon_pred = process_frame_silicone(frame, silicon_mask_model, is_keras)
-    face = process_frame_deepface(frame)
-    prob = process_frame_aenet(face["face"], aenet_pred)
+def process_frame_all(frame, silicon_model, aenet_pred, is_keras):
+    sil_pred = float(process_frame_silicone(frame, silicon_model, is_keras))
+    dp_pred = process_frame_deepface(frame)
+    ae_pred = process_frame_aenet(dp_pred["face"], aenet_pred)
 
     print(
-        f"DeepFace FAS predictor. Is it spoof? {face['is_real']}. Score: {face['antispoof_score']}. 1 = Spoof, 0 = Live."
+        f"DeepFace FAS predictor. Is it spoof? {dp_pred['is_real']}. "
+        f"Score: {round(dp_pred['antispoof_score'], ROUND_DIGITS)}. [1 = Spoof, 0 = Live]."
     )
     print(
-        f"Is subject wearing silicon mask? {silicon_pred > SILICONE_TH}. Score: {silicon_pred}. 1 = Mask, 0 = No Mask."
+        f"Is subject wearing silicon mask? {sil_pred > SILICONE_TH}. "
+        f"Score: {round(sil_pred, ROUND_DIGITS)}. [1 = Mask, 0 = No Mask]."
     )
-    print(f"AENet FAS predictor. Is it spoof? {prob > SPOOF_TH}. Score: {prob}. 1 = Spoof, 0 = Live.")
+    print(
+        f"AENet FAS predictor. Is it spoof? {ae_pred > SPOOF_TH}. "
+        f"Score: {round(ae_pred, ROUND_DIGITS)}. [1 = Spoof, 0 = Live]."
+    )
     print("\n")
 
 
